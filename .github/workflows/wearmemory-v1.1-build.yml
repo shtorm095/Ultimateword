@@ -1,9 +1,9 @@
-name: Build WearMemory v1.2 IPA
+name: Build WearMemory v1.3 IPA
 
 on:
   push:
     branches:
-      - wearmemory-v1.2-ui
+      - wearmemory-v1.3-google-drive
   pull_request:
     branches:
       - main
@@ -16,19 +16,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Reconstruct source archive
+      - name: Extract v1.3 source
         run: |
           set -euo pipefail
-          cat wearmemory_build/source.part1 wearmemory_build/source.part2 wearmemory_build/source.part3 wearmemory_build/source.part4 > /tmp/WearMemorySource.b64
-          base64 -D -i /tmp/WearMemorySource.b64 -o /tmp/WearMemorySource.zip
           mkdir -p /tmp/WearMemorySource
-          unzip -q /tmp/WearMemorySource.zip -d /tmp/WearMemorySource
+          unzip -q wearmemory_build/WearMemory_v1.3_GoogleDriveSettings_Source.zip -d /tmp/WearMemorySource
           test -f /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders/project.yml
-
-      - name: Apply v1.2 dark UI
-        run: |
-          set -euo pipefail
-          cat wearmemory_build/ui.part1 wearmemory_build/ui.part2 wearmemory_build/ui.part3 wearmemory_build/ui.part4 wearmemory_build/ui.part5 wearmemory_build/ui.part6 > /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders/WearMemory/ContentView.swift
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -44,9 +37,9 @@ jobs:
           P="WearMemory/Info.plist"
           PB=/usr/libexec/PlistBuddy
           $PB -c "Delete :CFBundleShortVersionString" "$P" 2>/dev/null || true
-          $PB -c "Add :CFBundleShortVersionString string 1.2" "$P"
+          $PB -c "Add :CFBundleShortVersionString string 1.3" "$P"
           $PB -c "Delete :CFBundleVersion" "$P" 2>/dev/null || true
-          $PB -c "Add :CFBundleVersion string 12" "$P"
+          $PB -c "Add :CFBundleVersion string 13" "$P"
           $PB -c "Delete :NSMicrophoneUsageDescription" "$P" 2>/dev/null || true
           $PB -c "Add :NSMicrophoneUsageDescription string WearMemory записывает звук для 24-часового циклического аудиобуфера." "$P"
           $PB -c "Delete :NSSpeechRecognitionUsageDescription" "$P" 2>/dev/null || true
@@ -85,17 +78,17 @@ jobs:
           APP="build/DerivedData/Build/Products/Release-iphoneos/WearMemory.app"
           test -d "$APP"
           /usr/bin/codesign --force --sign - "$APP" || true
-          rm -rf Payload WearMemory_v1.2_iOS15.ipa
+          rm -rf Payload WearMemory_v1.3_iOS15.ipa
           mkdir Payload
           cp -R "$APP" Payload/
-          zip -qry WearMemory_v1.2_iOS15.ipa Payload
-          shasum -a 256 WearMemory_v1.2_iOS15.ipa > WearMemory_v1.2_iOS15.ipa.sha256
+          zip -qry WearMemory_v1.3_iOS15.ipa Payload
+          shasum -a 256 WearMemory_v1.3_iOS15.ipa > WearMemory_v1.3_iOS15.ipa.sha256
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
-          name: WearMemory-v1.2-iOS15
+          name: WearMemory-v1.3-iOS15
           path: |
-            /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders/WearMemory_v1.2_iOS15.ipa
-            /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders/WearMemory_v1.2_iOS15.ipa.sha256
+            /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders/WearMemory_v1.3_iOS15.ipa
+            /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders/WearMemory_v1.3_iOS15.ipa.sha256
           if-no-files-found: error
