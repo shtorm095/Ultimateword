@@ -32,6 +32,31 @@ jobs:
         working-directory: /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders
         run: xcodegen generate
 
+      - name: Restore app Info.plist
+        working-directory: /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders
+        run: |
+          set -euo pipefail
+          P="WearMemory/Info.plist"
+          PB=/usr/libexec/PlistBuddy
+          $PB -c "Delete :CFBundleShortVersionString" "$P" 2>/dev/null || true
+          $PB -c "Add :CFBundleShortVersionString string 1.1" "$P"
+          $PB -c "Delete :CFBundleVersion" "$P" 2>/dev/null || true
+          $PB -c "Add :CFBundleVersion string 11" "$P"
+          $PB -c "Delete :NSMicrophoneUsageDescription" "$P" 2>/dev/null || true
+          $PB -c "Add :NSMicrophoneUsageDescription string WearMemory записывает звук для 24-часового циклического аудиобуфера." "$P"
+          $PB -c "Delete :NSSpeechRecognitionUsageDescription" "$P" 2>/dev/null || true
+          $PB -c "Add :NSSpeechRecognitionUsageDescription string WearMemory преобразует речевые фрагменты в дневной текстовый журнал." "$P"
+          $PB -c "Delete :NSCameraUsageDescription" "$P" 2>/dev/null || true
+          $PB -c "Add :NSCameraUsageDescription string WearMemory использует камеру только когда вы сами выбираете фото или видео." "$P"
+          $PB -c "Delete :UIBackgroundModes" "$P" 2>/dev/null || true
+          $PB -c "Add :UIBackgroundModes array" "$P"
+          $PB -c "Add :UIBackgroundModes:0 string audio" "$P"
+          $PB -c "Delete :UIFileSharingEnabled" "$P" 2>/dev/null || true
+          $PB -c "Add :UIFileSharingEnabled bool true" "$P"
+          $PB -c "Delete :LSSupportsOpeningDocumentsInPlace" "$P" 2>/dev/null || true
+          $PB -c "Add :LSSupportsOpeningDocumentsInPlace bool true" "$P"
+          plutil -lint "$P"
+
       - name: Build device app
         working-directory: /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders
         run: |
@@ -45,6 +70,7 @@ jobs:
             -derivedDataPath build/DerivedData \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
+            TARGETED_DEVICE_FAMILY=1 \
             build
 
       - name: Package IPA for TrollStore
