@@ -1,12 +1,9 @@
-name: Build WearMemory v1.1 IPA
+name: Build WearMemory v1.2 IPA
 
 on:
   push:
     branches:
-      - wearmemory-v1.1-build
-  pull_request:
-    branches:
-      - main
+      - wearmemory-v1.2-ui
   workflow_dispatch:
 
 jobs:
@@ -25,6 +22,11 @@ jobs:
           unzip -q /tmp/WearMemorySource.zip -d /tmp/WearMemorySource
           test -f /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders/project.yml
 
+      - name: Apply v1.2 dark UI
+        run: |
+          set -euo pipefail
+          cat wearmemory_build/ui.part1 wearmemory_build/ui.part2 wearmemory_build/ui.part3 wearmemory_build/ui.part4 wearmemory_build/ui.part5 wearmemory_build/ui.part6 > /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders/WearMemory/ContentView.swift
+
       - name: Install XcodeGen
         run: brew install xcodegen
 
@@ -39,9 +41,9 @@ jobs:
           P="WearMemory/Info.plist"
           PB=/usr/libexec/PlistBuddy
           $PB -c "Delete :CFBundleShortVersionString" "$P" 2>/dev/null || true
-          $PB -c "Add :CFBundleShortVersionString string 1.1" "$P"
+          $PB -c "Add :CFBundleShortVersionString string 1.2" "$P"
           $PB -c "Delete :CFBundleVersion" "$P" 2>/dev/null || true
-          $PB -c "Add :CFBundleVersion string 11" "$P"
+          $PB -c "Add :CFBundleVersion string 12" "$P"
           $PB -c "Delete :NSMicrophoneUsageDescription" "$P" 2>/dev/null || true
           $PB -c "Add :NSMicrophoneUsageDescription string WearMemory записывает звук для 24-часового циклического аудиобуфера." "$P"
           $PB -c "Delete :NSSpeechRecognitionUsageDescription" "$P" 2>/dev/null || true
@@ -80,17 +82,17 @@ jobs:
           APP="build/DerivedData/Build/Products/Release-iphoneos/WearMemory.app"
           test -d "$APP"
           /usr/bin/codesign --force --sign - "$APP" || true
-          rm -rf Payload WearMemory_v1.1_iOS15.ipa
+          rm -rf Payload WearMemory_v1.2_iOS15.ipa
           mkdir Payload
           cp -R "$APP" Payload/
-          zip -qry WearMemory_v1.1_iOS15.ipa Payload
-          shasum -a 256 WearMemory_v1.1_iOS15.ipa > WearMemory_v1.1_iOS15.ipa.sha256
+          zip -qry WearMemory_v1.2_iOS15.ipa Payload
+          shasum -a 256 WearMemory_v1.2_iOS15.ipa > WearMemory_v1.2_iOS15.ipa.sha256
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
-          name: WearMemory-v1.1-iOS15
+          name: WearMemory-v1.2-iOS15
           path: |
-            /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders/WearMemory_v1.1_iOS15.ipa
-            /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders/WearMemory_v1.1_iOS15.ipa.sha256
+            /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders/WearMemory_v1.2_iOS15.ipa
+            /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders/WearMemory_v1.2_iOS15.ipa.sha256
           if-no-files-found: error
