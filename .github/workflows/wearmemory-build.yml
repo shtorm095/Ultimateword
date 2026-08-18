@@ -6,6 +6,11 @@ on:
     paths:
       - '.wearmemory_build/**'
       - '.github/workflows/wearmemory-build.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '.wearmemory_build/**'
+      - '.github/workflows/wearmemory-build.yml'
   workflow_dispatch:
 
 permissions:
