@@ -1,0 +1,73 @@
+name: Build WearMemory IPA
+
+on:
+  push:
+    branches: [ wearmemory-install ]
+    paths:
+      - '.wearmemory_build/**'
+      - '.github/workflows/wearmemory-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reconstruct WearMemory source
+        run: |
+          set -euo pipefail
+          cat .wearmemory_build/source.b64.* | python3 -c 'import sys,base64; sys.stdout.buffer.write(base64.b64decode(sys.stdin.buffer.read()))' > WearMemory_source_v0.8.zip
+          unzip -q WearMemory_source_v0.8.zip
+          test -f WearMemory/project.yml
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: WearMemory
+        run: xcodegen generate
+
+      - name: Build for iPod/iPhone device without developer signing
+        working-directory: WearMemory
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project WearMemory.xcodeproj \
+            -scheme WearMemory \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build
+
+      - name: Package IPA for TrollStore
+        working-directory: WearMemory
+        run: |
+          set -euo pipefail
+          APP='build/DerivedData/Build/Products/Release-iphoneos/WearMemory.app'
+          test -d "$APP"
+          rm -rf Payload WearMemory.ipa
+          mkdir Payload
+          cp -R "$APP" Payload/WearMemory.app
+          /usr/bin/codesign --force --deep --sign - Payload/WearMemory.app
+          zip -qry WearMemory.ipa Payload
+          test -s WearMemory.ipa
+          shasum -a 256 WearMemory.ipa | tee WearMemory.ipa.sha256
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: WearMemory-IPA-v0.8
+          path: |
+            WearMemory/WearMemory.ipa
+            WearMemory/WearMemory.ipa.sha256
+          if-no-files-found: error
