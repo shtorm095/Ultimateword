@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - wearmemory-v1.1-build
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -17,7 +20,7 @@ jobs:
         run: |
           set -euo pipefail
           cat wearmemory_build/source.part1 wearmemory_build/source.part2 wearmemory_build/source.part3 wearmemory_build/source.part4 > /tmp/WearMemorySource.b64
-          base64 --decode /tmp/WearMemorySource.b64 > /tmp/WearMemorySource.zip
+          base64 -D -i /tmp/WearMemorySource.b64 -o /tmp/WearMemorySource.zip
           mkdir -p /tmp/WearMemorySource
           unzip -q /tmp/WearMemorySource.zip -d /tmp/WearMemorySource
           test -f /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders/project.yml
