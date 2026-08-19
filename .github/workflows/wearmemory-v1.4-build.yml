@@ -33,6 +33,9 @@ jobs:
         working-directory: /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders
         run: xcodegen generate
 
+      - name: Restore v1.4 files after XcodeGen
+        run: python3 wearmemory_build/apply_v1.4_final.py /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders/WearMemory
+
       - name: Validate app Info.plist
         working-directory: /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders
         run: |
