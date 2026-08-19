@@ -40,7 +40,7 @@ jobs:
       - name: Restore v1.4 base files
         run: python3 base/wearmemory_build/apply_v1.4_final.py /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders/WearMemory
 
-      - name: Apply and validate final patch
+      - name: Apply and validate final patches
         working-directory: /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders
         run: |
           set -euo pipefail
@@ -48,6 +48,10 @@ jobs:
           gzip -dc /tmp/final.patch.gz > /tmp/final.patch
           test "$(shasum -a 256 /tmp/final.patch | awk '{print $1}')" = "a05f9a74fa788153790daa642e512013e1aa087f3ac656a8d72274ea442d6228"
           patch -p0 < /tmp/final.patch
+          base64 -D -i "$GITHUB_WORKSPACE/wearmemory_final/audio.patch.gz.b64" -o /tmp/audio.patch.gz
+          gzip -dc /tmp/audio.patch.gz > /tmp/audio.patch
+          test "$(shasum -a 256 /tmp/audio.patch | awk '{print $1}')" = "004ed7bfc606cef5826960bea356473a0efc8294cbc2ce702d40b6fe79216227"
+          patch -p0 < /tmp/audio.patch
           shasum -a 256 WearMemory/AppModel.swift WearMemory/ContentView.swift WearMemory/GoogleDriveSync.swift WearMemory/CameraPicker.swift WearMemory/AudioBufferManager.swift WearMemory/Info.plist
           test "$(shasum -a 256 WearMemory/AppModel.swift | awk '{print $1}')" = "c5da18e9309a92ede6e670f3706909f289668a5576d538ba6396d61bb79fda26"
           test "$(shasum -a 256 WearMemory/ContentView.swift | awk '{print $1}')" = "169ba666c9f8854b6f06100cbd5c188a6d8653fac78988c2d55235f26df2bd4e"
