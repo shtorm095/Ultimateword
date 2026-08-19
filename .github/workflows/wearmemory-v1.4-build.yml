@@ -36,6 +36,55 @@ jobs:
       - name: Restore v1.4 files after XcodeGen
         run: python3 wearmemory_build/apply_v1.4_final.py /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders/WearMemory
 
+      - name: Apply iOS 15 compatibility fixes
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          root = Path('/tmp/WearMemorySource/WearMemory_v1.1_AudioFolders/WearMemory')
+
+          p = root / 'AppModel.swift'
+          s = p.read_text()
+          s = s.replace('    let driveSync = GoogleDriveSync()\n', '    var driveSync = GoogleDriveSync()\n')
+          p.write_text(s)
+
+          p = root / 'ContentView.swift'
+          s = p.read_text()
+          replacement = '''    private var recentAudioCard: some View {
+          VStack(spacing: 0) {
+              HStack {
+                  Image(systemName: "waveform")
+                      .foregroundColor(.blue)
+                  VStack(alignment: .leading, spacing: 3) {
+                      Text("Аудиобуфер")
+                          .foregroundColor(.white)
+                      Text("Фрагменты сохраняются автоматически")
+                          .font(.caption)
+                          .foregroundColor(.secondary)
+                  }
+                  Spacer()
+                  Text("\\(model.audio.segmentCount)/480")
+                      .font(.caption.monospacedDigit())
+                      .foregroundColor(.blue)
+              }
+              .padding(14)
+          }
+          .cardStyle()
+      }
+
+      private var transcriptCard: some View {'''
+          s2, count = re.subn(
+              r'    private var recentAudioCard: some View \{.*?\n    private var transcriptCard: some View \{',
+              replacement,
+              s,
+              count=1,
+              flags=re.S,
+          )
+          if count != 1:
+              raise SystemExit('recentAudioCard compatibility replacement failed')
+          p.write_text(s2)
+          PY
+
       - name: Validate app Info.plist
         working-directory: /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders
         run: |
