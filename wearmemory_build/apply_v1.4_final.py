@@ -12,9 +12,8 @@ def restore(prefix, count, out_name, expected_sha256):
     (root / out_name).write_bytes(data)
     print(f'{out_name}: {digest}')
 
-restore('final_appmodel2', 2, 'AppModel.swift', 'c5da18e9309a92ede6e670f3706909f289668a5576d538ba6396d61bb79fda26')
+restore('final_appmodel', 2, 'AppModel.swift', '1e3aedd76a5027f3d69b560e3b61253b99b71a8057d33150dd3b173fccadcbc3')
 restore('final_content', 5, 'ContentView.swift', 'a6da585aa4d72d8522f36f7fabd8df1e840934e14e606548cf0749ae3c35f68d')
-restore('final_audio', 3, 'AudioBufferManager.swift', '5b1c253e16f17723132406674bd665078473126dafeb94e1ec022b2fe7df3c4b')
 restore('final_info', 1, 'Info.plist', 'f1f207571a73e2d95535a64b4d68de360a0631d3554e7bedc4a58608b1c8396c')
 
 sync_encoded = ''.join((base / f'v14_sync0.{i}').read_text().strip() for i in range(4))
