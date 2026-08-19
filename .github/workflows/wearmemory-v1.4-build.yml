@@ -32,7 +32,7 @@ jobs:
         run: python3 wearmemory_build/apply_v1.3.py /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders/WearMemory
 
       - name: Apply v1.4 OAuth and Drive API
-        run: python3 wearmemory_build/apply_v1.4.py /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders/WearMemory
+        run: python3 wearmemory_build/apply_v1.4_chunks.py /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders/WearMemory
 
       - name: Install XcodeGen
         run: brew install xcodegen
