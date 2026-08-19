@@ -1,0 +1,91 @@
+name: Build WearMemory v1.4 Final
+
+on:
+  push:
+    branches: [wearmemory-v1.4-final-build]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Checkout final build scripts
+        uses: actions/checkout@v4
+
+      - name: Checkout v1.4 base source
+        uses: actions/checkout@v4
+        with:
+          ref: wearmemory-v1.4-oauth-build2
+          path: base
+
+      - name: Reconstruct v1.1 source
+        run: |
+          set -euo pipefail
+          cat base/wearmemory_build/source.part1 base/wearmemory_build/source.part2 base/wearmemory_build/source.part3 base/wearmemory_build/source.part4 > /tmp/source.b64
+          base64 -D -i /tmp/source.b64 -o /tmp/source.zip
+          rm -rf /tmp/WearMemorySource
+          mkdir -p /tmp/WearMemorySource
+          unzip -q /tmp/source.zip -d /tmp/WearMemorySource
+          test -f /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders/project.yml
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders
+        run: xcodegen generate
+
+      - name: Restore v1.4 base files
+        run: python3 base/wearmemory_build/apply_v1.4_final.py /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders/WearMemory
+
+      - name: Apply and validate final patch
+        working-directory: /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders
+        run: |
+          set -euo pipefail
+          base64 -D -i "$GITHUB_WORKSPACE/wearmemory_final/final.patch.gz.b64" -o /tmp/final.patch.gz
+          gzip -dc /tmp/final.patch.gz > /tmp/final.patch
+          test "$(shasum -a 256 /tmp/final.patch | awk '{print $1}')" = "a05f9a74fa788153790daa642e512013e1aa087f3ac656a8d72274ea442d6228"
+          patch -p0 < /tmp/final.patch
+          test "$(shasum -a 256 WearMemory/AppModel.swift | awk '{print $1}')" = "c5da18e9309a92ede6e670f3706909f289668a5576d538ba6396d61bb79fda26"
+          test "$(shasum -a 256 WearMemory/ContentView.swift | awk '{print $1}')" = "169ba666c9f8854b6f06100cbd5c188a6d8653fac78988c2d55235f26df2bd4e"
+          test "$(shasum -a 256 WearMemory/GoogleDriveSync.swift | awk '{print $1}')" = "5d6cb94449b0c7cb64833f3e1387cc8a0ebda8765109cc4717bca838036b4ff8"
+          test "$(shasum -a 256 WearMemory/CameraPicker.swift | awk '{print $1}')" = "29092c70f9d21ffc422946d93d258cb994cdc9d3abfc755df0ba5cafa529dd80"
+          test "$(shasum -a 256 WearMemory/AudioBufferManager.swift | awk '{print $1}')" = "5b1c253e16f17723132406674bd665078473126dafeb94e1ec022b2fe7df3c4b"
+          test "$(shasum -a 256 WearMemory/Info.plist | awk '{print $1}')" = "f1f207571a73e2d95535a64b4d68de360a0631d3554e7bedc4a58608b1c8396c"
+          plutil -lint WearMemory/Info.plist
+          grep -F 'https://www.googleapis.com/auth/drive.file' WearMemory/GoogleDriveSync.swift
+          grep -F 'trigger_onepick' WearMemory/GoogleDriveSync.swift
+          grep -F '@ObservedObject var driveSync: GoogleDriveSync' WearMemory/ContentView.swift
+
+      - name: Build device app
+        working-directory: /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders
+        run: |
+          set -euo pipefail
+          xcodebuild -project WearMemory.xcodeproj -scheme WearMemory -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build/DerivedData CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO TARGETED_DEVICE_FAMILY=1 build
+
+      - name: Package IPA
+        working-directory: /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders
+        run: |
+          set -euo pipefail
+          APP="build/DerivedData/Build/Products/Release-iphoneos/WearMemory.app"
+          test -d "$APP"
+          /usr/bin/codesign --force --sign - "$APP" || true
+          rm -rf Payload WearMemory_v1.4_Final.ipa WearMemory_v1.4_Final.ipa.sha256
+          mkdir Payload
+          cp -R "$APP" Payload/
+          find Payload -name '.DS_Store' -type f -delete
+          find Payload -name '__MACOSX' -type d -prune -exec rm -rf {} +
+          zip -qry -9 WearMemory_v1.4_Final.ipa Payload -x '*.DS_Store' '*/__MACOSX/*'
+          unzip -t WearMemory_v1.4_Final.ipa
+          shasum -a 256 WearMemory_v1.4_Final.ipa > WearMemory_v1.4_Final.ipa.sha256
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: WearMemory-v1.4-Final-IPA
+          path: |
+            /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders/WearMemory_v1.4_Final.ipa
+            /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders/WearMemory_v1.4_Final.ipa.sha256
+          if-no-files-found: error
