@@ -23,16 +23,8 @@ jobs:
           unzip -q /tmp/WearMemorySource.zip -d /tmp/WearMemorySource
           test -f /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders/project.yml
 
-      - name: Apply v1.2 dark UI
-        run: |
-          set -euo pipefail
-          cat wearmemory_build/ui.part1 wearmemory_build/ui.part2 wearmemory_build/ui.part3 wearmemory_build/ui.part4 wearmemory_build/ui.part5 wearmemory_build/ui.part6 > /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders/WearMemory/ContentView.swift
-
-      - name: Apply v1.3 base changes
-        run: python3 wearmemory_build/apply_v1.3.py /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders/WearMemory
-
-      - name: Apply v1.4 OAuth and Drive API
-        run: python3 wearmemory_build/apply_v1.4_chunks.py /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders/WearMemory
+      - name: Restore verified v1.4 OAuth source
+        run: python3 wearmemory_build/apply_v1.4_final.py /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders/WearMemory
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -41,36 +33,15 @@ jobs:
         working-directory: /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders
         run: xcodegen generate
 
-      - name: Enforce v1.4 Info.plist
+      - name: Validate app Info.plist
         working-directory: /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders
         run: |
           set -euo pipefail
           P="WearMemory/Info.plist"
-          PB=/usr/libexec/PlistBuddy
-          $PB -c "Delete :CFBundleShortVersionString" "$P" 2>/dev/null || true
-          $PB -c "Add :CFBundleShortVersionString string 1.4" "$P"
-          $PB -c "Delete :CFBundleVersion" "$P" 2>/dev/null || true
-          $PB -c "Add :CFBundleVersion string 14" "$P"
-          $PB -c "Delete :NSMicrophoneUsageDescription" "$P" 2>/dev/null || true
-          $PB -c "Add :NSMicrophoneUsageDescription string WearMemory записывает звук для 24-часового циклического аудиобуфера." "$P"
-          $PB -c "Delete :NSSpeechRecognitionUsageDescription" "$P" 2>/dev/null || true
-          $PB -c "Add :NSSpeechRecognitionUsageDescription string WearMemory преобразует речевые фрагменты в дневной текстовый журнал." "$P"
-          $PB -c "Delete :NSCameraUsageDescription" "$P" 2>/dev/null || true
-          $PB -c "Add :NSCameraUsageDescription string WearMemory использует камеру только когда вы сами выбираете фото или видео." "$P"
-          $PB -c "Delete :UIBackgroundModes" "$P" 2>/dev/null || true
-          $PB -c "Add :UIBackgroundModes array" "$P"
-          $PB -c "Add :UIBackgroundModes:0 string audio" "$P"
-          $PB -c "Delete :UIFileSharingEnabled" "$P" 2>/dev/null || true
-          $PB -c "Add :UIFileSharingEnabled bool true" "$P"
-          $PB -c "Delete :LSSupportsOpeningDocumentsInPlace" "$P" 2>/dev/null || true
-          $PB -c "Add :LSSupportsOpeningDocumentsInPlace bool true" "$P"
-          $PB -c "Delete :CFBundleURLTypes" "$P" 2>/dev/null || true
-          $PB -c "Add :CFBundleURLTypes array" "$P"
-          $PB -c "Add :CFBundleURLTypes:0 dict" "$P"
-          $PB -c "Add :CFBundleURLTypes:0:CFBundleTypeRole string Editor" "$P"
-          $PB -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" "$P"
-          $PB -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string com.googleusercontent.apps.923188036776-mos9ub27f4k3bhnodr8r4n46flsisptj" "$P"
           plutil -lint "$P"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$P")" = "1.4"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$P")" = "14"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleURLTypes:0:CFBundleURLSchemes:0' "$P" | grep -Fx 'com.googleusercontent.apps.923188036776-mos9ub27f4k3bhnodr8r4n46flsisptj'
 
       - name: Build device app
         working-directory: /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders
