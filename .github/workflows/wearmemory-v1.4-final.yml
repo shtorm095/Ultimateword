@@ -33,7 +33,7 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
 
-      - name: Generate Xcode project
+      - name: Generate initial Xcode project
         working-directory: /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders
         run: xcodegen generate
 
@@ -63,6 +63,16 @@ jobs:
           grep -F 'https://www.googleapis.com/auth/drive.file' WearMemory/GoogleDriveSync.swift
           grep -F 'trigger_onepick' WearMemory/GoogleDriveSync.swift
           grep -F '@ObservedObject var driveSync: GoogleDriveSync' WearMemory/ContentView.swift
+
+      - name: Regenerate Xcode project with final sources
+        working-directory: /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders
+        run: |
+          set -euo pipefail
+          cp WearMemory/Info.plist /tmp/WearMemory.Final.Info.plist
+          xcodegen generate
+          cp /tmp/WearMemory.Final.Info.plist WearMemory/Info.plist
+          grep -F 'GoogleDriveSync.swift' WearMemory.xcodeproj/project.pbxproj
+          test "$(shasum -a 256 WearMemory/Info.plist | awk '{print $1}')" = "f1f207571a73e2d95535a64b4d68de360a0631d3554e7bedc4a58608b1c8396c"
 
       - name: Build device app
         working-directory: /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders
