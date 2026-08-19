@@ -1,6 +1,9 @@
 name: Build WearMemory v1.4 OAuth IPA
 
 on:
+  push:
+    branches:
+      - wearmemory-v1.4-oauth-build2
   pull_request:
     branches:
       - main
