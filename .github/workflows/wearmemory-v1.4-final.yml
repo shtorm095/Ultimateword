@@ -1,10 +1,8 @@
-name: Build WearMemory v1.4 Final
+name: Build WearMemory v1.4 Final 60s
 
 on:
   push:
     branches: [wearmemory-v1.4-final-build]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -48,21 +46,30 @@ jobs:
           gzip -dc /tmp/final.patch.gz > /tmp/final.patch
           test "$(shasum -a 256 /tmp/final.patch | awk '{print $1}')" = "a05f9a74fa788153790daa642e512013e1aa087f3ac656a8d72274ea442d6228"
           patch -p0 < /tmp/final.patch
+
           base64 -D -i "$GITHUB_WORKSPACE/wearmemory_final/audio.patch.gz.b64" -o /tmp/audio.patch.gz
           gzip -dc /tmp/audio.patch.gz > /tmp/audio.patch
           test "$(shasum -a 256 /tmp/audio.patch | awk '{print $1}')" = "004ed7bfc606cef5826960bea356473a0efc8294cbc2ce702d40b6fe79216227"
           patch -p0 < /tmp/audio.patch
-          shasum -a 256 WearMemory/AppModel.swift WearMemory/ContentView.swift WearMemory/GoogleDriveSync.swift WearMemory/CameraPicker.swift WearMemory/AudioBufferManager.swift WearMemory/Info.plist
+
+          base64 -D -i "$GITHUB_WORKSPACE/wearmemory_final/transcription60.patch.gz.b64" -o /tmp/transcription60.patch.gz
+          gzip -dc /tmp/transcription60.patch.gz > /tmp/transcription60.patch
+          test "$(shasum -a 256 /tmp/transcription60.patch | awk '{print $1}')" = "7ea63529efe47badf64a38bc0526ec4499d16ea159248732e63ce49afba4a52b"
+          patch -p0 < /tmp/transcription60.patch
+
           test "$(shasum -a 256 WearMemory/AppModel.swift | awk '{print $1}')" = "c5da18e9309a92ede6e670f3706909f289668a5576d538ba6396d61bb79fda26"
           test "$(shasum -a 256 WearMemory/ContentView.swift | awk '{print $1}')" = "169ba666c9f8854b6f06100cbd5c188a6d8653fac78988c2d55235f26df2bd4e"
           test "$(shasum -a 256 WearMemory/GoogleDriveSync.swift | awk '{print $1}')" = "5d6cb94449b0c7cb64833f3e1387cc8a0ebda8765109cc4717bca838036b4ff8"
           test "$(shasum -a 256 WearMemory/CameraPicker.swift | awk '{print $1}')" = "29092c70f9d21ffc422946d93d258cb994cdc9d3abfc755df0ba5cafa529dd80"
           test "$(shasum -a 256 WearMemory/AudioBufferManager.swift | awk '{print $1}')" = "5b1c253e16f17723132406674bd665078473126dafeb94e1ec022b2fe7df3c4b"
+          test "$(shasum -a 256 WearMemory/TranscriptionService.swift | awk '{print $1}')" = "ce786c82b74acf0b942b4b4d774a94234bfe97f95699b3fb0ed2cd16c88d9ce0"
           test "$(shasum -a 256 WearMemory/Info.plist | awk '{print $1}')" = "f1f207571a73e2d95535a64b4d68de360a0631d3554e7bedc4a58608b1c8396c"
           plutil -lint WearMemory/Info.plist
           grep -F 'https://www.googleapis.com/auth/drive.file' WearMemory/GoogleDriveSync.swift
           grep -F 'trigger_onepick' WearMemory/GoogleDriveSync.swift
           grep -F '@ObservedObject var driveSync: GoogleDriveSync' WearMemory/ContentView.swift
+          grep -F 'let len = min(60.0, duration - start)' WearMemory/TranscriptionService.swift
+          grep -F 'Распознаю 60-сек. часть…' WearMemory/TranscriptionService.swift
 
       - name: Regenerate Xcode project with final sources
         working-directory: /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders
@@ -72,6 +79,7 @@ jobs:
           xcodegen generate
           cp /tmp/WearMemory.Final.Info.plist WearMemory/Info.plist
           grep -F 'GoogleDriveSync.swift' WearMemory.xcodeproj/project.pbxproj
+          grep -F 'TranscriptionService.swift' WearMemory.xcodeproj/project.pbxproj
           test "$(shasum -a 256 WearMemory/Info.plist | awk '{print $1}')" = "f1f207571a73e2d95535a64b4d68de360a0631d3554e7bedc4a58608b1c8396c"
 
       - name: Build device app
@@ -87,20 +95,20 @@ jobs:
           APP="build/DerivedData/Build/Products/Release-iphoneos/WearMemory.app"
           test -d "$APP"
           /usr/bin/codesign --force --sign - "$APP" || true
-          rm -rf Payload WearMemory_v1.4_Final.ipa WearMemory_v1.4_Final.ipa.sha256
+          rm -rf Payload WearMemory_v1.4_Final_60s.ipa WearMemory_v1.4_Final_60s.ipa.sha256
           mkdir Payload
           cp -R "$APP" Payload/
           find Payload -name '.DS_Store' -type f -delete
           find Payload -name '__MACOSX' -type d -prune -exec rm -rf {} +
-          zip -qry -9 WearMemory_v1.4_Final.ipa Payload -x '*.DS_Store' '*/__MACOSX/*'
-          unzip -t WearMemory_v1.4_Final.ipa
-          shasum -a 256 WearMemory_v1.4_Final.ipa > WearMemory_v1.4_Final.ipa.sha256
+          zip -qry -9 WearMemory_v1.4_Final_60s.ipa Payload -x '*.DS_Store' '*/__MACOSX/*'
+          unzip -t WearMemory_v1.4_Final_60s.ipa
+          shasum -a 256 WearMemory_v1.4_Final_60s.ipa > WearMemory_v1.4_Final_60s.ipa.sha256
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
-          name: WearMemory-v1.4-Final-IPA
+          name: WearMemory-v1.4-Final-60s-IPA
           path: |
-            /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders/WearMemory_v1.4_Final.ipa
-            /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders/WearMemory_v1.4_Final.ipa.sha256
+            /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders/WearMemory_v1.4_Final_60s.ipa
+            /tmp/WearMemorySource/WearMemory_v1.1_AudioFolders/WearMemory_v1.4_Final_60s.ipa.sha256
           if-no-files-found: error
