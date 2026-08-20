@@ -76,22 +76,7 @@ jobs:
               exit 41
             fi
 
-            # XcodeGen's `info:` stanza rewrites an existing Info.plist with defaults.
-            # Use the checked-in plist directly so OAuth URL types and v1.5 metadata survive the build.
-            python3 - <<'PY'
-            from pathlib import Path
-            p = Path('project.yml')
-            s = p.read_text()
-            old = "    info:\n      path: WearMemory/Info.plist\n"
-            if old not in s:
-                raise SystemExit('expected XcodeGen info stanza not found')
-            s = s.replace(old, '')
-            marker = '        PRODUCT_NAME: WearMemory\n'
-            if marker not in s:
-                raise SystemExit('PRODUCT_NAME marker not found')
-            s = s.replace(marker, marker + '        INFOPLIST_FILE: WearMemory/Info.plist\n', 1)
-            p.write_text(s)
-            PY
+            python3 -c "from pathlib import Path; p=Path('project.yml'); s=p.read_text(); old='    info:\\n      path: WearMemory/Info.plist\\n'; marker='        PRODUCT_NAME: WearMemory\\n'; assert old in s; assert marker in s; s=s.replace(old,''); s=s.replace(marker,marker+'        INFOPLIST_FILE: WearMemory/Info.plist\\n',1); p.write_text(s)"
             grep -F 'INFOPLIST_FILE: WearMemory/Info.plist' project.yml
             if grep -q '^    info:' project.yml; then
               echo 'ERROR: XcodeGen info generator is still enabled'
