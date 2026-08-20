@@ -1,4 +1,6 @@
 from pathlib import Path
+import os
+import re
 import sys
 
 root = Path(sys.argv[1] if len(sys.argv) > 1 else "/tmp/wm164")
@@ -26,6 +28,9 @@ def replace_func(text: str, signature: str, replacement: str) -> str:
 # Keep the v1.6.1 recording-state propagation so the button changes blue/red immediately.
 p = root / "WearMemory/AppModel.swift"
 s = p.read_text()
+run_id = os.environ.get("GITHUB_RUN_ID", "")
+if run_id and "WM_GITHUB_RUN_ID_" not in s:
+    s = f'#warning("WM_GITHUB_RUN_ID_{run_id}")\n' + s
 if "import Combine" not in s:
     s = s.replace("import UIKit\n", "import UIKit\nimport Combine\n", 1)
 marker = "    private var batteryObserver: NSObjectProtocol?\n"
@@ -44,11 +49,9 @@ if "audio.objectWillChange" not in s:
     )
 p.write_text(s)
 
-
 p = root / "WearMemory/GoogleDriveSync.swift"
 s = p.read_text()
 
-# Finalized audio must be copied to the durable pending directory and queue before upload.
 s = replace_func(
     s,
     "    func enqueueAudio(_ sourceURL: URL)",
@@ -84,7 +87,6 @@ s = replace_func(
     }''',
 )
 
-# Insert helpers once.
 if "private func reconcilePendingAudioFilesLocked()" not in s:
     pos = s.find("    private func flushQueueLocked()")
     if pos < 0:
@@ -212,38 +214,26 @@ s = replace_func(
     }''',
 )
 
-# URLSessionUploadTask is used for request bodies, including binary M4A multipart data.
 old_create = "        request.httpBody = body\n        URLSession.shared.dataTask(with: request) { data, response, error in"
 if old_create in s:
-    s = s.replace(
-        old_create,
-        "        URLSession.shared.uploadTask(with: request, from: body) { data, response, error in",
-        1,
-    )
+    s = s.replace(old_create, "        URLSession.shared.uploadTask(with: request, from: body) { data, response, error in", 1)
 elif "URLSession.shared.uploadTask(with: request, from: body)" not in s:
     raise RuntimeError("createFile request-body pattern missing")
 
 old_update = "        request.httpBody = data\n        URLSession.shared.dataTask(with: request) { data, response, error in"
 if old_update in s:
-    s = s.replace(
-        old_update,
-        "        URLSession.shared.uploadTask(with: request, from: data) { data, response, error in",
-        1,
-    )
+    s = s.replace(old_update, "        URLSession.shared.uploadTask(with: request, from: data) { data, response, error in", 1)
 elif "URLSession.shared.uploadTask(with: request, from: data)" not in s:
     raise RuntimeError("updateFile request-body pattern missing")
 
 p.write_text(s)
 
-# Version.
 p = root / "WearMemory/Info.plist"
 s = p.read_text()
-import re
 s = re.sub(r"(<key>CFBundleShortVersionString</key>\s*<string>)[^<]+(</string>)", r"\g<1>1.6.4\2", s, count=1)
 s = re.sub(r"(<key>CFBundleVersion</key>\s*<string>)[^<]+(</string>)", r"\g<1>22\2", s, count=1)
 p.write_text(s)
 
-# Ensure XcodeGen uses the maintained Info.plist.
 p = root / "project.yml"
 s = p.read_text()
 old = "    info:\n      path: WearMemory/Info.plist\n"
@@ -256,4 +246,4 @@ if "INFOPLIST_FILE: WearMemory/Info.plist" not in s:
     s = s.replace(marker, marker + "        INFOPLIST_FILE: WearMemory/Info.plist\n", 1)
 p.write_text(s)
 
-print("WearMemory v1.6.4 Drive patch applied")
+print(f"WearMemory v1.6.4 Drive patch applied; run={run_id}")
