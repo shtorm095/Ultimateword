@@ -1,0 +1,181 @@
+name: Build WearMemory Minimal Voice Bridge Suite
+
+on:
+  push:
+    branches: [wearmemory-suite-minimal-bridge-build]
+    paths:
+      - 'wearmemory_suite_minimal/**'
+      - '.github/workflows/wearmemory-suite-minimal-bridge.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Reconstruct source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat wearmemory_suite_minimal/source.part00 \
+              wearmemory_suite_minimal/source.part01 \
+              wearmemory_suite_minimal/source.part02 \
+              wearmemory_suite_minimal/source.part03 > /tmp/suite.b64
+          base64 -D -i /tmp/suite.b64 -o /tmp/suite.tar.xz
+          echo '307cccfd985c4055dfb63d63064f22eb662572de58215086728f8dc704e36bca  /tmp/suite.tar.xz' | shasum -a 256 -c -
+          rm -rf /tmp/wmsuite && mkdir -p /tmp/wmsuite
+          tar -xJf /tmp/suite.tar.xz -C /tmp/wmsuite
+          test -d /tmp/wmsuite/WearMemory
+          test -d /tmp/wmsuite/WearMemoryVoice
+
+      - name: Prove WearMemory core is unchanged from v1.6.5
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/wmsuite/WearMemory
+          cat > /tmp/unchanged.sha256 <<'EOF'
+          d87d3c1a053f92bf05032098bdd061ff467f2724642d1b0f96958fd1a1f15e25  AudioBufferManager.swift
+          29092c70f9d21ffc422946d93d258cb994cdc9d3abfc755df0ba5cafa529dd80  CameraPicker.swift
+          b17a7cc6f3096a81a8310cdbfd4b839548dec1f9f1f3d8c2aad67a7d1f320127  ContentView.swift
+          b65c561c5d03e8a24ea017760f84cfd39479db94047a9caf6c53ab4aa2ccd957  DailyLogStore.swift
+          1e2257d94db8b386976da6cbb0b17c11ceadfc45ead8a8320242bb5591d49686  ExternalAudioFolderStore.swift
+          ae8f9058b01748b45d71fc2dcfbc4d200119a835fd672b92e434666171b4a258  ExternalTextFolderStore.swift
+          120f39b7292bd1af81b3ad765e496dbbde3bd6773b62651439a311c5d960fbc1  GoogleDriveSync.swift
+          651f4fbf41f29c4556d8ac0663431c50b380e145341bf01e9874a9f51fa19b91  MediaConfirmationView.swift
+          f6ccc9b3d1ccc7cb8efae1d1cf4d696f8e241885caf80a5c0f391d30ef431ca5  MediaStore.swift
+          aabf3d2c8436a3bf1ae6f9815d07323fb33c8a4a77d86a8babef9888c7e8a897  Models.swift
+          c119961403f541662c736db9e4f5b2f4ad2d2b44d9af4d1fe171911b75f056e3  ShareSheet.swift
+          ce786c82b74acf0b942b4b4d774a94234bfe97f95699b3fb0ed2cd16c88d9ce0  TranscriptionService.swift
+          0569123b5f8548abbc04b49fdef51fa6a2191786f4260e5703f4733e97747f86  WearMemoryApp.swift
+          0e02979aa0eebf682c45dabd420fa62ae93d0d9ba7caf2d602d65d7cc822f273  WearMemoryAppDelegate.swift
+          EOF
+          shasum -a 256 -c /tmp/unchanged.sha256
+          grep -F 'var driveSync = GoogleDriveSync()' AppModel.swift
+          grep -F 'private let voiceBridge = SharedVoiceBridge()' AppModel.swift
+          grep -F 'self?.driveSync.enqueueAudio(url)' AppModel.swift
+          grep -F 'self?.voiceBridge.exportAudio(url, startedAt: start, endedAt: end)' AppModel.swift
+          grep -F 'audio.transcribeSegments = transcriptionEnabled' AppModel.swift
+          grep -F 'transcriptionEnabled = true' AppModel.swift
+          grep -F 'group.local.pavel.WearMemory' WearMemory.entitlements
+
+      - name: Generate Xcode project
+        shell: bash
+        run: |
+          set -euo pipefail
+          brew install xcodegen
+          cd /tmp/wmsuite
+          xcodegen generate
+
+      - name: Build WearMemory
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/wmsuite
+          xcodebuild \
+            -project WearMemorySuite.xcodeproj \
+            -scheme WearMemory \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/WearMemoryDerived \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            TARGETED_DEVICE_FAMILY=1 \
+            build | tee /tmp/wearmemory-build.log
+
+      - name: Build WearMemory Voice
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/wmsuite
+          xcodebuild \
+            -project WearMemorySuite.xcodeproj \
+            -scheme WearMemoryVoice \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/VoiceDerived \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            TARGETED_DEVICE_FAMILY=1 \
+            build | tee /tmp/voice-build.log
+
+      - name: Sign, verify, package
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/wmsuite
+          WM_APP='build/WearMemoryDerived/Build/Products/Release-iphoneos/WearMemory.app'
+          VOICE_APP='build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.app'
+          test -d "$WM_APP"
+          test -d "$VOICE_APP"
+
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$WM_APP/Info.plist")" = '1.6.5'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$WM_APP/Info.plist")" = '24'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$WM_APP/Info.plist")" = '15.0'
+          /usr/bin/file "$WM_APP/WearMemory" | grep -F 'arm64'
+          /usr/bin/file "$VOICE_APP/WearMemoryVoice" | grep -F 'arm64'
+
+          /usr/bin/codesign --force --sign - --entitlements WearMemory/WearMemory.entitlements "$WM_APP"
+          /usr/bin/codesign --force --sign - --entitlements WearMemoryVoice/WearMemoryVoice.entitlements "$VOICE_APP"
+          /usr/bin/codesign -d --entitlements :- "$WM_APP" > /tmp/wm-entitlements.plist 2>/dev/null
+          /usr/bin/codesign -d --entitlements :- "$VOICE_APP" > /tmp/voice-entitlements.plist 2>/dev/null
+          grep -F 'group.local.pavel.WearMemory' /tmp/wm-entitlements.plist
+          grep -F 'group.local.pavel.WearMemory' /tmp/voice-entitlements.plist
+
+          rm -rf /tmp/wm_payload /tmp/voice_payload
+          mkdir -p /tmp/wm_payload/Payload /tmp/voice_payload/Payload
+          cp -R "$WM_APP" /tmp/wm_payload/Payload/
+          cp -R "$VOICE_APP" /tmp/voice_payload/Payload/
+          (cd /tmp/wm_payload && zip -qry -9 /tmp/WearMemory_v1.6.5b24_MinimalVoiceBridge_iOS15.ipa Payload)
+          (cd /tmp/voice_payload && zip -qry -9 /tmp/WearMemoryVoice_v0.1_iOS15.ipa Payload)
+          unzip -t /tmp/WearMemory_v1.6.5b24_MinimalVoiceBridge_iOS15.ipa
+          unzip -t /tmp/WearMemoryVoice_v0.1_iOS15.ipa
+          shasum -a 256 /tmp/WearMemory_v1.6.5b24_MinimalVoiceBridge_iOS15.ipa > /tmp/WearMemory_v1.6.5b24_MinimalVoiceBridge_iOS15.ipa.sha256
+          shasum -a 256 /tmp/WearMemoryVoice_v0.1_iOS15.ipa > /tmp/WearMemoryVoice_v0.1_iOS15.ipa.sha256
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: WearMemory-MinimalBridge-Suite-iOS15
+          path: |
+            /tmp/WearMemory_v1.6.5b24_MinimalVoiceBridge_iOS15.ipa
+            /tmp/WearMemory_v1.6.5b24_MinimalVoiceBridge_iOS15.ipa.sha256
+            /tmp/WearMemoryVoice_v0.1_iOS15.ipa
+            /tmp/WearMemoryVoice_v0.1_iOS15.ipa.sha256
+            /tmp/wm-entitlements.plist
+            /tmp/voice-entitlements.plist
+          retention-days: 7
+
+      - name: Publish result branch
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          cd "$GITHUB_WORKSPACE"
+          git config user.name 'github-actions[bot]'
+          git config user.email '4189823+github-actions[bot]@users.noreply.github.com'
+          git fetch origin wearmemory-suite-minimal-bridge-result 2>/dev/null
+          if git show-ref --verify --quiet refs/remotes/origin/wearmemory-suite-minimal-bridge-result; then
+            git checkout -B wearmemory-suite-minimal-bridge-result origin/wearmemory-suite-minimal-bridge-result
+          else
+            git checkout --orphan wearmemory-suite-minimal-bridge-result
+            git rm -rf . >/dev/null 2>&1 || true
+          fi
+          mkdir -p artifacts
+          cp /tmp/WearMemory_v1.6.5b24_MinimalVoiceBridge_iOS15.ipa artifacts/ 2>/dev/null || true
+          cp /tmp/WearMemory_v1.6.5b24_MinimalVoiceBridge_iOS15.ipa.sha256 artifacts/ 2>/dev/null || true
+          cp /tmp/WearMemoryVoice_v0.1_iOS15.ipa artifacts/ 2>/dev/null || true
+          cp /tmp/WearMemoryVoice_v0.1_iOS15.ipa.sha256 artifacts/ 2>/dev/null || true
+          cp /tmp/wearmemory-build.log artifacts/ 2>/dev/null || true
+          cp /tmp/voice-build.log artifacts/ 2>/dev/null || true
+          cp /tmp/wm-entitlements.plist artifacts/ 2>/dev/null || true
+          cp /tmp/voice-entitlements.plist artifacts/ 2>/dev/null || true
+          date -u +%FT%TZ > artifacts/last_run.txt
+          git add artifacts
+          git commit -m 'WearMemory minimal Voice bridge build result' || true
+          git push origin HEAD:wearmemory-suite-minimal-bridge-result
