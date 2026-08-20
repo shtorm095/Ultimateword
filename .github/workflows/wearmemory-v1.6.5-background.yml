@@ -1,0 +1,108 @@
+name: Build WearMemory v1.6.5 Background Drive IPA
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'wm_v165_trigger.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Checkout v1.6.5 source carrier
+        uses: actions/checkout@v4
+        with:
+          ref: wearmemory-v1.6.5-build
+          fetch-depth: 0
+
+      - name: Restore source and validate background transport
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/wm165
+          mkdir -p /tmp/wm165
+          unzip -q wearmemory_v1.6.5_build/source.zip -d /tmp/wm165
+          echo 'bfc2a49798964694f27fa6a4f13e99d1cd25db203d15df47efeff65ca63e7ab4  wearmemory_v1.6.5_build/source.zip' | shasum -a 256 -c -
+          cd /tmp/wm165
+          plutil -lint WearMemory/Info.plist
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' WearMemory/Info.plist)" = '1.6.5'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' WearMemory/Info.plist)" = '23'
+          grep -F 'URLSessionConfiguration.background(withIdentifier: Self.backgroundSessionIdentifier)' WearMemory/GoogleDriveSync.swift
+          grep -F 'configuration.sessionSendsLaunchEvents = true' WearMemory/GoogleDriveSync.swift
+          grep -F 'uploadTask(with: request, fromFile: bodyURL)' WearMemory/GoogleDriveSync.swift
+          grep -F 'handleEventsForBackgroundURLSession identifier: String' WearMemory/WearMemoryAppDelegate.swift
+          grep -F 'beginBackgroundTask(withName: "WearMemory Drive scheduling")' WearMemory/GoogleDriveSync.swift
+          grep -F '.onChange(of: scenePhase)' WearMemory/WearMemoryApp.swift
+          grep -F 'model.driveSync.flushQueue()' WearMemory/WearMemoryApp.swift
+          grep -F 'audio.objectWillChange' WearMemory/AppModel.swift
+          grep -F 'model.audio.togglePlayback(item.url)' WearMemory/ContentView.swift
+          grep -F '.fill(model.audio.isRecording ? Color.red : Color.blue)' WearMemory/ContentView.swift
+
+      - name: Build arm64 iOS 15 app
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/wm165
+          brew install xcodegen
+          xcodegen generate
+          xcodebuild \
+            -project WearMemory.xcodeproj \
+            -scheme WearMemory \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            TARGETED_DEVICE_FAMILY=1 \
+            build | tee /tmp/wm165-build.log
+
+          APP='build/DerivedData/Build/Products/Release-iphoneos/WearMemory.app'
+          test -d "$APP"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Info.plist")" = '1.6.5'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Info.plist")" = '23'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$APP/Info.plist")" = '15.0'
+          /usr/bin/file "$APP/WearMemory" | grep -F 'arm64'
+          strings "$APP/WearMemory" | grep -F 'local.pavel.WearMemory.GoogleDrive.Background.v1'
+          strings "$APP/WearMemory" | grep -F 'WearMemory Drive scheduling'
+          /usr/bin/codesign --force --sign - "$APP" || true
+
+          rm -rf Payload WearMemory_v1.6.5_BackgroundDrive_iOS15.ipa WearMemory_v1.6.5_BackgroundDrive_iOS15.ipa.sha256
+          mkdir Payload
+          cp -R "$APP" Payload/
+          zip -qry -9 WearMemory_v1.6.5_BackgroundDrive_iOS15.ipa Payload -x '*.DS_Store' '*/__MACOSX/*'
+          unzip -t WearMemory_v1.6.5_BackgroundDrive_iOS15.ipa
+          shasum -a 256 WearMemory_v1.6.5_BackgroundDrive_iOS15.ipa > WearMemory_v1.6.5_BackgroundDrive_iOS15.ipa.sha256
+          cp WearMemory_v1.6.5_BackgroundDrive_iOS15.ipa /tmp/
+          cp WearMemory_v1.6.5_BackgroundDrive_iOS15.ipa.sha256 /tmp/
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: WearMemory-v1.6.5-BackgroundDrive-iOS15
+          path: |
+            /tmp/WearMemory_v1.6.5_BackgroundDrive_iOS15.ipa
+            /tmp/WearMemory_v1.6.5_BackgroundDrive_iOS15.ipa.sha256
+          retention-days: 7
+
+      - name: Publish to result branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin wearmemory-v1.6.5-result
+          git checkout -B wearmemory-v1.6.5-result origin/wearmemory-v1.6.5-result
+          mkdir -p artifacts
+          cp /tmp/WearMemory_v1.6.5_BackgroundDrive_iOS15.ipa artifacts/
+          cp /tmp/WearMemory_v1.6.5_BackgroundDrive_iOS15.ipa.sha256 artifacts/
+          cp /tmp/wm165-build.log artifacts/build.log
+          echo 0 > artifacts/build_status.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '4189823+github-actions[bot]@users.noreply.github.com'
+          git add artifacts
+          git commit -m 'WearMemory v1.6.5 background Drive IPA' || true
+          git push origin HEAD:wearmemory-v1.6.5-result
