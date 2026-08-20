@@ -8,7 +8,7 @@ on:
     branches:
       - main
     paths:
-      - 'wearmemory_voice_build/WearMemorySuite_v1.7.0_Voice0.1_Source.zip'
+      - 'wearmemory_voice_build/**'
       - '.github/workflows/wearmemory-voice-v0.1-build.yml'
 
 permissions:
@@ -21,15 +21,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Reconstruct source
+      - name: Reconstruct and validate source
         shell: bash
         run: |
           set -euo pipefail
-          SRC='wearmemory_voice_build/WearMemorySuite_v1.7.0_Voice0.1_Source.zip'
-          echo 'f546bd8b3ef45667f18703a3555fe08177fbd4c73fedba3195a4ca4c7aad19c9  '"$SRC" | shasum -a 256 -c -
+          cat wearmemory_voice_build/source.part00 \
+              wearmemory_voice_build/source.part01 \
+              wearmemory_voice_build/source.part02 \
+              wearmemory_voice_build/source.part03 \
+              wearmemory_voice_build/source.part04 \
+              wearmemory_voice_build/source.part05 \
+              wearmemory_voice_build/source.part06 \
+              wearmemory_voice_build/source.part07 > /tmp/src.b64
+          base64 -D -i /tmp/src.b64 -o /tmp/source.zip
+          echo 'f546bd8b3ef45667f18703a3555fe08177fbd4c73fedba3195a4ca4c7aad19c9  /tmp/source.zip' | shasum -a 256 -c -
           rm -rf /tmp/wmvoice
           mkdir -p /tmp/wmvoice
-          unzip -q "$SRC" -d /tmp/wmvoice
+          unzip -q /tmp/source.zip -d /tmp/wmvoice
           plutil -lint /tmp/wmvoice/WearMemory/Info.plist
           plutil -lint /tmp/wmvoice/WearMemoryVoice/Info.plist
           plutil -lint /tmp/wmvoice/WearMemory/WearMemory.entitlements
@@ -114,10 +122,10 @@ jobs:
           grep -F 'group.local.pavel.WearMemory' /tmp/wm-entitlements.txt
           grep -F 'group.local.pavel.WearMemory' /tmp/voice-entitlements.txt
 
+          rm -rf "$ROOT/Payload"
+          mkdir "$ROOT/Payload"
+          cp -R "$WM_APP" "$ROOT/Payload/"
           cd "$ROOT"
-          rm -rf Payload
-          mkdir Payload
-          cp -R "$WM_APP" Payload/
           zip -qry -9 /tmp/WearMemory_v1.7.0_VoiceBridge_iOS15.ipa Payload -x '*.DS_Store' '*/__MACOSX/*'
           rm -rf Payload
           mkdir Payload
