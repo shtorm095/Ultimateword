@@ -1,1 +1,1 @@
-dispatch WearMemory v1.6.4 Drive fix build now
+dispatch WearMemory v1.6.4 Drive fix build now - simplified workflow
