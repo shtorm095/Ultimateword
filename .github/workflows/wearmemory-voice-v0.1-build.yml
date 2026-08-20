@@ -117,8 +117,8 @@ jobs:
           /usr/bin/codesign --force --sign - --entitlements "$ROOT/WearMemoryVoice/WearMemoryVoice.entitlements" "$VOICE_APP"
           /usr/bin/codesign --verify --deep --strict "$WM_APP"
           /usr/bin/codesign --verify --deep --strict "$VOICE_APP"
-          /usr/bin/codesign -d --entitlements :- "$WM_APP" 2> /tmp/wm-entitlements.txt || true
-          /usr/bin/codesign -d --entitlements :- "$VOICE_APP" 2> /tmp/voice-entitlements.txt || true
+          /usr/bin/codesign -d --entitlements :- "$WM_APP" > /tmp/wm-entitlements.txt 2>&1
+          /usr/bin/codesign -d --entitlements :- "$VOICE_APP" > /tmp/voice-entitlements.txt 2>&1
           grep -F 'group.local.pavel.WearMemory' /tmp/wm-entitlements.txt
           grep -F 'group.local.pavel.WearMemory' /tmp/voice-entitlements.txt
 
