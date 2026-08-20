@@ -1,0 +1,181 @@
+name: Build WearMemory Audio v1.7.1
+
+on:
+  push:
+    branches: [wearmemory-audio-v1.7.1-build]
+    paths:
+      - 'wearmemory_audio_v171/**'
+      - '.github/workflows/wearmemory-audio-v1.7.1.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Reconstruct clean Audio source from verified v1.7.0 base
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin wearmemory-audio-v1.7.0-result
+          git show origin/wearmemory-audio-v1.7.0-result:artifacts/WearMemoryAudio_v1.7.0_Source.zip > /tmp/base.zip
+          echo '44cfeed144613d7d2649416b8b2728c4b2f4ea4072e1d1ee6948791d65aab9a8  /tmp/base.zip' | shasum -a 256 -c -
+          rm -rf /tmp/wmaudio && mkdir -p /tmp/wmaudio
+          unzip -q /tmp/base.zip -d /tmp/wmaudio
+          cp wearmemory_audio_v171/AppModel.swift /tmp/wmaudio/WearMemory/AppModel.swift
+          cp wearmemory_audio_v171/ContentView.swift /tmp/wmaudio/WearMemory/ContentView.swift
+          cp wearmemory_audio_v171/project.yml /tmp/wmaudio/project.yml
+
+      - name: Convert Google Drive to Audio-only and bump version
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          info = Path('/tmp/wmaudio/WearMemory/Info.plist')
+          s = info.read_text()
+          s = s.replace('<string>1.7.0</string>', '<string>1.7.1</string>')
+          s = s.replace('<string>25</string>', '<string>26</string>')
+          s = re.sub(r'\n\t<key>NSCameraUsageDescription</key>\n\t<string>.*?</string>', '', s)
+          s = re.sub(r'\n\t<key>NSSpeechRecognitionUsageDescription</key>\n\t<string>.*?</string>', '', s)
+          s = s.replace('WearMemory записывает звук для 24-часового циклического аудиобуфера.', 'WearMemory Audio записывает звук для циклического локального аудиобуфера и загрузки в Google Drive.')
+          info.write_text(s)
+
+          p = Path('/tmp/wmaudio/WearMemory/GoogleDriveSync.swift')
+          s = p.read_text()
+          s = s.replace('foldersAuthorized = picked.contains(Self.textFolderID) && picked.contains(Self.audioFolderID)', 'foldersAuthorized = picked.contains(Self.audioFolderID)')
+          s = s.replace('URLQueryItem(name: "file_ids", value: [Self.textFolderID, Self.audioFolderID].joined(separator: ",")),', 'URLQueryItem(name: "file_ids", value: Self.audioFolderID),')
+          s = s.replace('guard pickedSet.contains(Self.textFolderID), pickedSet.contains(Self.audioFolderID) else {\n            clearPendingOAuth()\n            setError("Нужно выбрать обе папки: Audio Lesen и Audio Hören")\n            return\n        }', 'guard pickedSet.contains(Self.audioFolderID) else {\n            clearPendingOAuth()\n            setError("Нужно выбрать папку Audio Hören")\n            return\n        }')
+          s = s.replace('let ids = [Self.textFolderID, Self.audioFolderID]', 'let ids = [Self.audioFolderID]')
+          s = s.replace('self.lastError = ok ? nil : "Нет доступа к папкам Audio Lesen / Audio Hören на этом Google-аккаунте. Выберите обе папки в Google Picker."', 'self.lastError = ok ? nil : "Нет доступа к папке Audio Hören на этом Google-аккаунте. Выберите Audio Hören в Google Picker."')
+          s = s.replace('grants this app access to the two pre-existing target folders during OAuth.', 'grants this app access to the pre-existing Audio Hören target folder during OAuth.')
+          s = s.replace('trigger_onepick=true are required. file_ids restricts the picker to the two known\n        // destination folders and allow_folder_selection enables selecting folder objects.', 'trigger_onepick=true are required. file_ids restricts the picker to the known\n        // Audio Hören destination folder and allow_folder_selection enables selecting folder objects.')
+          needle = '        try? fm.createDirectory(at: backgroundBodyDirectory, withIntermediateDirectories: true)\n        _ = backgroundSession\n        isAuthorized = KeychainStore.read(key: refreshTokenKey) != nil\n'
+          replacement = '        try? fm.createDirectory(at: backgroundBodyDirectory, withIntermediateDirectories: true)\n        _ = backgroundSession\n        migrateLegacyQueueToAudioOnly()\n        isAuthorized = KeychainStore.read(key: refreshTokenKey) != nil\n'
+          if needle not in s:
+              raise SystemExit('GoogleDriveSync init patch point not found')
+          s = s.replace(needle, replacement)
+          marker = '    private func loadQueue() -> [PendingItem] {\n'
+          migration = '    private func migrateLegacyQueueToAudioOnly() {\n        let queue = loadQueue()\n        let audioOnly = queue.filter { $0.kind == .audio }\n        if audioOnly != queue { saveQueue(audioOnly) }\n    }\n\n'
+          if marker not in s:
+              raise SystemExit('GoogleDriveSync queue patch point not found')
+          s = s.replace(marker, migration + marker)
+          p.write_text(s)
+          PY
+
+      - name: Prove product boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/wmaudio
+          echo 'd87d3c1a053f92bf05032098bdd061ff467f2724642d1b0f96958fd1a1f15e25  WearMemory/AudioBufferManager.swift' | shasum -a 256 -c -
+          grep -F 'audio.transcribeSegments = false' WearMemory/AppModel.swift
+          grep -F 'self.driveSync.enqueueAudio(url)' WearMemory/AppModel.swift
+          grep -F 'self.integrationBridge.exportFinalizedAudio' WearMemory/AppModel.swift
+          grep -F 'togglePlayback(item.url)' WearMemory/ContentView.swift
+          grep -F 'play.circle.fill' WearMemory/ContentView.swift
+          grep -F 'URLQueryItem(name: "file_ids", value: Self.audioFolderID)' WearMemory/GoogleDriveSync.swift
+          grep -F 'let ids = [Self.audioFolderID]' WearMemory/GoogleDriveSync.swift
+          grep -F 'group.local.pavel.WearMemory' WearMemory/WearMemory.entitlements
+          ! grep -F 'TXT →' WearMemory/ContentView.swift
+          ! grep -F 'Audio Lesen' WearMemory/ContentView.swift
+          ! grep -F 'Распознавание' WearMemory/ContentView.swift
+          ! grep -F 'ChatGPT' WearMemory/ContentView.swift
+          ! grep -F 'Фото и видео' WearMemory/ContentView.swift
+          test "$(grep -c 'path: WearMemory/' project.yml)" -eq 7
+
+      - name: Generate Xcode project
+        shell: bash
+        run: |
+          set -euo pipefail
+          brew install xcodegen
+          cd /tmp/wmaudio
+          xcodegen generate
+
+      - name: Build
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/wmaudio
+          xcodebuild \
+            -project WearMemoryAudio.xcodeproj \
+            -scheme WearMemory \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            TARGETED_DEVICE_FAMILY=1 \
+            build | tee /tmp/wmaudio171-build.log
+
+      - name: Sign, verify and package
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/wmaudio
+          APP='build/Build/Products/Release-iphoneos/WearMemory.app'
+          test -d "$APP"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$APP/Info.plist")" = 'WearMemory Audio'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Info.plist")" = '1.7.1'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Info.plist")" = '26'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$APP/Info.plist")" = '15.0'
+          /usr/bin/file "$APP/WearMemory" | grep -F 'arm64'
+          /usr/bin/codesign --force --sign - --entitlements WearMemory/WearMemory.entitlements "$APP"
+          /usr/bin/codesign -d --entitlements :- "$APP" > /tmp/wmaudio171-entitlements.plist 2>/dev/null
+          grep -F 'TROLLTROLL.*' /tmp/wmaudio171-entitlements.plist
+          grep -F 'com.apple.token' /tmp/wmaudio171-entitlements.plist
+          grep -F 'group.local.pavel.WearMemory' /tmp/wmaudio171-entitlements.plist
+          rm -rf /tmp/payload && mkdir -p /tmp/payload/Payload
+          cp -R "$APP" /tmp/payload/Payload/
+          (cd /tmp/payload && zip -qry -9 /tmp/WearMemoryAudio_v1.7.1b26_iOS15.ipa Payload)
+          unzip -t /tmp/WearMemoryAudio_v1.7.1b26_iOS15.ipa
+          shasum -a 256 /tmp/WearMemoryAudio_v1.7.1b26_iOS15.ipa > /tmp/WearMemoryAudio_v1.7.1b26_iOS15.ipa.sha256
+          zip -qry /tmp/WearMemoryAudio_v1.7.1_Source.zip WearMemory project.yml
+          shasum -a 256 /tmp/WearMemoryAudio_v1.7.1_Source.zip > /tmp/WearMemoryAudio_v1.7.1_Source.zip.sha256
+
+      - name: Upload verified artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: WearMemoryAudio-v1.7.1-Verified
+          path: |
+            /tmp/WearMemoryAudio_v1.7.1b26_iOS15.ipa
+            /tmp/WearMemoryAudio_v1.7.1b26_iOS15.ipa.sha256
+            /tmp/WearMemoryAudio_v1.7.1_Source.zip
+            /tmp/WearMemoryAudio_v1.7.1_Source.zip.sha256
+            /tmp/wmaudio171-entitlements.plist
+            /tmp/wmaudio171-build.log
+          retention-days: 7
+
+      - name: Publish result branch
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          cd "$GITHUB_WORKSPACE"
+          git config user.name 'github-actions[bot]'
+          git config user.email '4189823+github-actions[bot]@users.noreply.github.com'
+          git fetch origin wearmemory-audio-v1.7.1-result 2>/dev/null
+          if git show-ref --verify --quiet refs/remotes/origin/wearmemory-audio-v1.7.1-result; then
+            git checkout -B wearmemory-audio-v1.7.1-result origin/wearmemory-audio-v1.7.1-result
+          else
+            git checkout --orphan wearmemory-audio-v1.7.1-result
+            git rm -rf . >/dev/null 2>&1 || true
+          fi
+          mkdir -p artifacts
+          cp /tmp/WearMemoryAudio_v1.7.1b26_iOS15.ipa artifacts/ 2>/dev/null || true
+          cp /tmp/WearMemoryAudio_v1.7.1b26_iOS15.ipa.sha256 artifacts/ 2>/dev/null || true
+          cp /tmp/WearMemoryAudio_v1.7.1_Source.zip artifacts/ 2>/dev/null || true
+          cp /tmp/WearMemoryAudio_v1.7.1_Source.zip.sha256 artifacts/ 2>/dev/null || true
+          cp /tmp/wmaudio171-entitlements.plist artifacts/ 2>/dev/null || true
+          cp /tmp/wmaudio171-build.log artifacts/ 2>/dev/null || true
+          date -u +%FT%TZ > artifacts/last_run.txt
+          git add artifacts
+          git commit -m 'WearMemory Audio v1.7.1 build result' || true
+          git push origin HEAD:wearmemory-audio-v1.7.1-result
