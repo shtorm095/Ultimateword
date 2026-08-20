@@ -1,0 +1,200 @@
+Command line invocation:
+    /Applications/Xcode_16.4.app/Contents/Developer/usr/bin/xcodebuild -project WearMemorySuite.xcodeproj -scheme WearMemoryVoice -configuration Release -sdk iphoneos -destination generic/platform=iOS -derivedDataPath build/VoiceDerived CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO TARGETED_DEVICE_FAMILY=1 build
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+    CODE_SIGNING_REQUIRED = NO
+    SDKROOT = iphoneos18.5
+    TARGETED_DEVICE_FAMILY = 1
+
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (1 target)
+    Target 'WearMemoryVoice' in project 'WearMemorySuite' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+Build description signature: 45feaf509109f61d039b9d049d1ef728
+Build description path: /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/XCBuildData/45feaf509109f61d039b9d049d1ef728.xcbuilddata
+ClangStatCache /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk /tmp/wmsuite/build/VoiceDerived/SDKStatCaches.noindex/iphoneos18.5-22F76-a529daf784b3616c7c04a36aeb7f5c05.sdkstatcache
+    cd /tmp/wmsuite/WearMemorySuite.xcodeproj
+    /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk -o /tmp/wmsuite/build/VoiceDerived/SDKStatCaches.noindex/iphoneos18.5-22F76-a529daf784b3616c7c04a36aeb7f5c05.sdkstatcache
+
+CreateBuildDirectory /tmp/wmsuite/build/VoiceDerived/Build/Products
+    cd /tmp/wmsuite/WearMemorySuite.xcodeproj
+    builtin-create-build-directory /tmp/wmsuite/build/VoiceDerived/Build/Products
+
+CreateBuildDirectory /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex
+    cd /tmp/wmsuite/WearMemorySuite.xcodeproj
+    builtin-create-build-directory /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex
+
+WriteAuxiliaryFile /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemorySuite-72d04938648c8fa00f24b7da23f8108d-VFS-iphoneos/all-product-headers.yaml
+    cd /tmp/wmsuite/WearMemorySuite.xcodeproj
+    write-file /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemorySuite-72d04938648c8fa00f24b7da23f8108d-VFS-iphoneos/all-product-headers.yaml
+
+CreateBuildDirectory /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/EagerLinkingTBDs/Release-iphoneos
+    cd /tmp/wmsuite/WearMemorySuite.xcodeproj
+    builtin-create-build-directory /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/EagerLinkingTBDs/Release-iphoneos
+
+CreateBuildDirectory /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos
+    cd /tmp/wmsuite/WearMemorySuite.xcodeproj
+    builtin-create-build-directory /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos
+
+WriteAuxiliaryFile /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/WearMemoryVoice.hmap (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+    cd /tmp/wmsuite
+    write-file /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/WearMemoryVoice.hmap
+
+WriteAuxiliaryFile /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/WearMemoryVoice.DependencyStaticMetadataFileList (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+    cd /tmp/wmsuite
+    write-file /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/WearMemoryVoice.DependencyStaticMetadataFileList
+
+WriteAuxiliaryFile /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/WearMemoryVoice.DependencyMetadataFileList (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+    cd /tmp/wmsuite
+    write-file /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/WearMemoryVoice.DependencyMetadataFileList
+
+WriteAuxiliaryFile /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/WearMemoryVoice-project-headers.hmap (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+    cd /tmp/wmsuite
+    write-file /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/WearMemoryVoice-project-headers.hmap
+
+WriteAuxiliaryFile /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/WearMemoryVoice-own-target-headers.hmap (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+    cd /tmp/wmsuite
+    write-file /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/WearMemoryVoice-own-target-headers.hmap
+
+WriteAuxiliaryFile /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/WearMemoryVoice-generated-files.hmap (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+    cd /tmp/wmsuite
+    write-file /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/WearMemoryVoice-generated-files.hmap
+
+WriteAuxiliaryFile /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/WearMemoryVoice-all-target-headers.hmap (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+    cd /tmp/wmsuite
+    write-file /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/WearMemoryVoice-all-target-headers.hmap
+
+WriteAuxiliaryFile /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/WearMemoryVoice-all-non-framework-target-headers.hmap (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+    cd /tmp/wmsuite
+    write-file /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/WearMemoryVoice-all-non-framework-target-headers.hmap
+
+WriteAuxiliaryFile /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice_const_extract_protocols.json (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+    cd /tmp/wmsuite
+    write-file /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice_const_extract_protocols.json
+
+WriteAuxiliaryFile /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice.SwiftFileList (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+    cd /tmp/wmsuite
+    write-file /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice.SwiftFileList
+
+WriteAuxiliaryFile /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice.SwiftConstValuesFileList (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+    cd /tmp/wmsuite
+    write-file /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice.LinkFileList (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+    cd /tmp/wmsuite
+    write-file /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice.LinkFileList
+
+WriteAuxiliaryFile /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice-OutputFileMap.json (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+    cd /tmp/wmsuite
+    write-file /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice-OutputFileMap.json
+
+MkDir /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.app (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+    cd /tmp/wmsuite
+    /bin/mkdir -p /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.app
+
+ProcessInfoPlistFile /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.app/Info.plist /tmp/wmsuite/WearMemoryVoice/Info.plist (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+    cd /tmp/wmsuite
+    builtin-infoPlistUtility /tmp/wmsuite/WearMemoryVoice/Info.plist -producttype com.apple.product-type.application -genpkginfo /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.app/PkgInfo -expandbuildsettings -format binary -platform iphoneos -requiredArchitecture arm64 -o /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.app/Info.plist
+
+SwiftDriver WearMemoryVoice normal arm64 com.apple.xcode.tools.swift.compiler (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+    cd /tmp/wmsuite
+    builtin-SwiftDriver -- /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name WearMemoryVoice -O -whole-module-optimization -enforce-exclusivity\=checked @/tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice.SwiftFileList -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk -target arm64-apple-ios15.0 -g -module-cache-path /tmp/wmsuite/build/VoiceDerived/ModuleCache.noindex -Xfrontend -serialize-debugging-options -swift-version 5 -I /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos -F /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos -c -num-threads 3 -Xcc -ivfsstatcache -Xcc /tmp/wmsuite/build/VoiceDerived/SDKStatCaches.noindex/iphoneos18.5-22F76-a529daf784b3616c7c04a36aeb7f5c05.sdkstatcache -output-file-map /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/wmsuite/build/VoiceDerived/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/WearMemoryVoice-generated-files.hmap -Xcc -I/tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/WearMemoryVoice-own-target-headers.hmap -Xcc -I/tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/WearMemoryVoice-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/WearMemoryVoice-project-headers.hmap -Xcc -I/tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/include -Xcc -I/tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/DerivedSources-normal/arm64 -Xcc -I/tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/DerivedSources/arm64 -Xcc -I/tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/DerivedSources -emit-objc-header -emit-objc-header-path /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice-Swift.h -working-directory /tmp/wmsuite -no-emit-module-separately-wmo
+
+SwiftCompile normal arm64 Compiling\ ContentView.swift,\ EnrollmentRecorder.swift,\ Models.swift,\ SharedVoicePaths.swift,\ SpeakerStore.swift,\ VoiceAppModel.swift,\ VoiceFingerprintEngine.swift,\ VoiceProcessor.swift,\ WearMemoryVoiceApp.swift /tmp/wmsuite/WearMemoryVoice/ContentView.swift /tmp/wmsuite/WearMemoryVoice/EnrollmentRecorder.swift /tmp/wmsuite/WearMemoryVoice/Models.swift /tmp/wmsuite/WearMemoryVoice/SharedVoicePaths.swift /tmp/wmsuite/WearMemoryVoice/SpeakerStore.swift /tmp/wmsuite/WearMemoryVoice/VoiceAppModel.swift /tmp/wmsuite/WearMemoryVoice/VoiceFingerprintEngine.swift /tmp/wmsuite/WearMemoryVoice/VoiceProcessor.swift /tmp/wmsuite/WearMemoryVoice/WearMemoryVoiceApp.swift (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+
+CompileSwift normal arm64 (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+    cd /tmp/wmsuite
+    
+
+SwiftDriver\ Compilation WearMemoryVoice normal arm64 com.apple.xcode.tools.swift.compiler (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+    cd /tmp/wmsuite
+    builtin-Swift-Compilation -- /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name WearMemoryVoice -O -whole-module-optimization -enforce-exclusivity\=checked @/tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice.SwiftFileList -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk -target arm64-apple-ios15.0 -g -module-cache-path /tmp/wmsuite/build/VoiceDerived/ModuleCache.noindex -Xfrontend -serialize-debugging-options -swift-version 5 -I /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos -F /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos -c -num-threads 3 -Xcc -ivfsstatcache -Xcc /tmp/wmsuite/build/VoiceDerived/SDKStatCaches.noindex/iphoneos18.5-22F76-a529daf784b3616c7c04a36aeb7f5c05.sdkstatcache -output-file-map /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/wmsuite/build/VoiceDerived/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/WearMemoryVoice-generated-files.hmap -Xcc -I/tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/WearMemoryVoice-own-target-headers.hmap -Xcc -I/tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/WearMemoryVoice-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/WearMemoryVoice-project-headers.hmap -Xcc -I/tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/include -Xcc -I/tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/DerivedSources-normal/arm64 -Xcc -I/tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/DerivedSources/arm64 -Xcc -I/tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/DerivedSources -emit-objc-header -emit-objc-header-path /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice-Swift.h -working-directory /tmp/wmsuite -no-emit-module-separately-wmo
+
+SwiftDriverJobDiscovery normal arm64 Compiling ContentView.swift, EnrollmentRecorder.swift, Models.swift, SharedVoicePaths.swift, SpeakerStore.swift, VoiceAppModel.swift, VoiceFingerprintEngine.swift, VoiceProcessor.swift, WearMemoryVoiceApp.swift (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+
+SwiftDriver\ Compilation\ Requirements WearMemoryVoice normal arm64 com.apple.xcode.tools.swift.compiler (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+    cd /tmp/wmsuite
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name WearMemoryVoice -O -whole-module-optimization -enforce-exclusivity\=checked @/tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice.SwiftFileList -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk -target arm64-apple-ios15.0 -g -module-cache-path /tmp/wmsuite/build/VoiceDerived/ModuleCache.noindex -Xfrontend -serialize-debugging-options -swift-version 5 -I /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos -F /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos -c -num-threads 3 -Xcc -ivfsstatcache -Xcc /tmp/wmsuite/build/VoiceDerived/SDKStatCaches.noindex/iphoneos18.5-22F76-a529daf784b3616c7c04a36aeb7f5c05.sdkstatcache -output-file-map /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/wmsuite/build/VoiceDerived/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/WearMemoryVoice-generated-files.hmap -Xcc -I/tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/WearMemoryVoice-own-target-headers.hmap -Xcc -I/tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/WearMemoryVoice-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/WearMemoryVoice-project-headers.hmap -Xcc -I/tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/include -Xcc -I/tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/DerivedSources-normal/arm64 -Xcc -I/tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/DerivedSources/arm64 -Xcc -I/tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/DerivedSources -emit-objc-header -emit-objc-header-path /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice-Swift.h -working-directory /tmp/wmsuite -no-emit-module-separately-wmo
+
+SwiftMergeGeneratedHeaders /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/DerivedSources/WearMemoryVoice-Swift.h /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice-Swift.h (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+    cd /tmp/wmsuite
+    builtin-swiftHeaderTool -arch arm64 /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice-Swift.h -o /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/DerivedSources/WearMemoryVoice-Swift.h
+
+Copy /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.swiftmodule/arm64-apple-ios.swiftmodule /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice.swiftmodule (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+    cd /tmp/wmsuite
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice.swiftmodule /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.swiftmodule/arm64-apple-ios.swiftmodule
+
+Copy /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.swiftmodule/arm64-apple-ios.swiftdoc /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice.swiftdoc (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+    cd /tmp/wmsuite
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice.swiftdoc /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.swiftmodule/arm64-apple-ios.swiftdoc
+
+Copy /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.swiftmodule/arm64-apple-ios.abi.json /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice.abi.json (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+    cd /tmp/wmsuite
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice.abi.json /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.swiftmodule/arm64-apple-ios.abi.json
+
+Copy /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.swiftmodule/Project/arm64-apple-ios.swiftsourceinfo /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice.swiftsourceinfo (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+    cd /tmp/wmsuite
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice.swiftsourceinfo /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.swiftmodule/Project/arm64-apple-ios.swiftsourceinfo
+
+Ld /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.app/WearMemoryVoice normal (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+    cd /tmp/wmsuite
+    /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios15.0 -isysroot /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk -Os -L/tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/EagerLinkingTBDs/Release-iphoneos -L/tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos -F/tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/EagerLinkingTBDs/Release-iphoneos -F/tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos -filelist /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice.LinkFileList -Xlinker -rpath -Xlinker @executable_path/Frameworks -dead_strip -Xlinker -object_path_lto -Xlinker /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice_lto.o -Xlinker -dependency_info -Xlinker /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice.swiftmodule -o /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.app/WearMemoryVoice
+
+ExtractAppIntentsMetadata (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+    cd /tmp/wmsuite
+    /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --module-name WearMemoryVoice --sdk-root /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk --xcode-version 16F6 --platform-family iOS --deployment-target 15.0 --bundle-identifier local.pavel.WearMemoryVoice --output /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.app --target-triple arm64-apple-ios15.0 --binary-file /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.app/WearMemoryVoice --dependency-file /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice_dependency_info.dat --stringsdata-file /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice.SwiftFileList --metadata-file-list /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/WearMemoryVoice.DependencyMetadataFileList --static-metadata-file-list /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/WearMemoryVoice.DependencyStaticMetadataFileList --swift-const-vals-list /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/Objects-normal/arm64/WearMemoryVoice.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-08-20 20:30:11.896 appintentsmetadataprocessor[5314:19868] Starting appintentsmetadataprocessor export
+2026-08-20 20:30:11.902 appintentsmetadataprocessor[5314:19868] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+
+GenerateDSYMFile /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.app.dSYM /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.app/WearMemoryVoice (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+    cd /tmp/wmsuite
+    /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/dsymutil /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.app/WearMemoryVoice -o /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.app.dSYM
+
+CopySwiftLibs /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.app (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+    cd /tmp/wmsuite
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.app/WearMemoryVoice --scan-folder /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.app/Frameworks --scan-folder /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.app/PlugIns --scan-folder /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.app/SystemExtensions --scan-folder /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.app/Extensions --platform iphoneos --toolchain /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.app/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+Ignoring --strip-bitcode because --sign was not passed
+
+AppIntentsSSUTraining (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+    cd /tmp/wmsuite
+    /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.app/Info.plist --temp-dir-path /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/ssu --bundle-id local.pavel.WearMemoryVoice --product-path /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.app --extracted-metadata-path /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.app/Metadata.appintents --metadata-file-list /tmp/wmsuite/build/VoiceDerived/Build/Intermediates.noindex/WearMemorySuite.build/Release-iphoneos/WearMemoryVoice.build/WearMemoryVoice.DependencyMetadataFileList --archive-ssu-assets
+2026-08-20 20:30:12.016 appintentsnltrainingprocessor[5319:19881] Parsing options for appintentsnltrainingprocessor
+2026-08-20 20:30:12.016 appintentsnltrainingprocessor[5319:19881] No AppShortcuts found - Skipping.
+
+RegisterExecutionPolicyException /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.app (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+    cd /tmp/wmsuite
+    builtin-RegisterExecutionPolicyException /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.app
+
+Validate /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.app (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+    cd /tmp/wmsuite
+    builtin-validationUtility /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.app -infoplist-subpath Info.plist
+
+Touch /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.app (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+    cd /tmp/wmsuite
+    /usr/bin/touch -c /tmp/wmsuite/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.app
+
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'WearMemoryVoice' from project 'WearMemorySuite')
+** BUILD SUCCEEDED **
+
