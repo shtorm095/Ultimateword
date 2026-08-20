@@ -1,1 +1,1 @@
-dispatch WearMemory Drive retry build
+dispatch WearMemory v1.6.4 Drive fix build now
