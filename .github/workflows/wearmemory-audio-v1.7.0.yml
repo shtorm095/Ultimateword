@@ -1,0 +1,331 @@
+name: Build WearMemory Audio v1.7.0
+
+on:
+  push:
+    branches: [wearmemory-audio-v1.7.0-build]
+    paths:
+      - 'wearmemory_audio_v170_trigger.txt'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Reconstruct verified suite source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat wearmemory_suite_minimal/source.part00 \
+              wearmemory_suite_minimal/source.part01 \
+              wearmemory_suite_minimal/source.part02 \
+              wearmemory_suite_minimal/source.part03 > /tmp/suite.b64
+          base64 -D -i /tmp/suite.b64 -o /tmp/suite.tar.xz
+          echo '307cccfd985c4055dfb63d63064f22eb662572de58215086728f8dc704e36bca  /tmp/suite.tar.xz' | shasum -a 256 -c -
+          rm -rf /tmp/wmsuite && mkdir -p /tmp/wmsuite
+          tar -xJf /tmp/suite.tar.xz -C /tmp/wmsuite
+          test -d /tmp/wmsuite/WearMemory
+
+      - name: Convert to WearMemory Audio with isolated future bridges
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/wmsuite
+          rm -f WearMemory/SharedVoiceBridge.swift
+
+          cat > WearMemory/AudioIntegrationBridge.swift <<'SWIFT'
+          import Foundation
+
+          /// Passive integration bridge for future WearMemory modules.
+          /// It never moves/deletes the Audio original, never touches Drive state,
+          /// and performs all shared-container work on a separate serial queue.
+          final class AudioIntegrationBridge {
+              static let appGroupIdentifier = "group.local.pavel.WearMemory"
+              static let bridgeVersion = 1
+
+              struct Status: Codable {
+                  let bridgeVersion: Int
+                  let module: String
+                  let appVersion: String
+                  let build: String
+                  let isRecording: Bool
+                  let audioStatus: String
+                  let driveStatus: String
+                  let drivePendingCount: Int
+                  let driveLastError: String?
+                  let lastCompletedAudioFile: String?
+                  let lastCompletedAt: Date?
+                  let updatedAt: Date
+              }
+
+              private struct AudioMetadata: Codable {
+                  let bridgeVersion: Int
+                  let sourceFileName: String
+                  let startedAt: Date
+                  let endedAt: Date
+                  let exportedAt: Date
+              }
+
+              private let fm = FileManager.default
+              private let queue = DispatchQueue(label: "WearMemory.Audio.IntegrationBridge", qos: .utility)
+              private let encoder: JSONEncoder = {
+                  let e = JSONEncoder()
+                  e.outputFormatting = [.sortedKeys]
+                  e.dateEncodingStrategy = .iso8601
+                  return e
+              }()
+
+              func exportFinalizedAudio(_ sourceURL: URL, startedAt: Date, endedAt: Date) {
+                  queue.async { [weak self] in
+                      self?.performExport(sourceURL, startedAt: startedAt, endedAt: endedAt)
+                  }
+              }
+
+              func publishStatus(_ status: Status) {
+                  queue.async { [weak self] in
+                      guard let self = self else { return }
+                      do {
+                          let root = try self.sharedRoot()
+                          let dir = root.appendingPathComponent("Status", isDirectory: true)
+                          try self.fm.createDirectory(at: dir, withIntermediateDirectories: true)
+                          try self.encoder.encode(status).write(to: dir.appendingPathComponent("audio.json"), options: .atomic)
+                      } catch {
+                          NSLog("WearMemory Audio status bridge: %@", error.localizedDescription)
+                      }
+                  }
+              }
+
+              private func performExport(_ sourceURL: URL, startedAt: Date, endedAt: Date) {
+                  do {
+                      guard fm.fileExists(atPath: sourceURL.path) else {
+                          throw NSError(domain: "WearMemory.AudioIntegrationBridge", code: 2,
+                                        userInfo: [NSLocalizedDescriptionKey: "Finalized audio file not found"])
+                      }
+                      let size = (try? sourceURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+                      guard size > 0 else {
+                          throw NSError(domain: "WearMemory.AudioIntegrationBridge", code: 3,
+                                        userInfo: [NSLocalizedDescriptionKey: "Finalized audio file is empty"])
+                      }
+
+                      let root = try sharedRoot()
+                      let inbox = root.appendingPathComponent("AudioInbox", isDirectory: true)
+                      try fm.createDirectory(at: inbox, withIntermediateDirectories: true)
+                      let destination = inbox.appendingPathComponent(sourceURL.lastPathComponent)
+                      if !fm.fileExists(atPath: destination.path) {
+                          let temp = inbox.appendingPathComponent(".incoming-\(UUID().uuidString)-\(sourceURL.lastPathComponent)")
+                          try fm.copyItem(at: sourceURL, to: temp)
+                          try fm.moveItem(at: temp, to: destination)
+                      }
+
+                      let metadata = AudioMetadata(
+                          bridgeVersion: Self.bridgeVersion,
+                          sourceFileName: sourceURL.lastPathComponent,
+                          startedAt: startedAt,
+                          endedAt: endedAt,
+                          exportedAt: Date()
+                      )
+                      let sidecar = inbox.appendingPathComponent(sourceURL.deletingPathExtension().lastPathComponent + ".meta.json")
+                      try encoder.encode(metadata).write(to: sidecar, options: .atomic)
+                  } catch {
+                      NSLog("WearMemory Audio integration bridge: %@", error.localizedDescription)
+                  }
+              }
+
+              private func sharedRoot() throws -> URL {
+                  guard let root = fm.containerURL(forSecurityApplicationGroupIdentifier: Self.appGroupIdentifier) else {
+                      throw NSError(domain: "WearMemory.AudioIntegrationBridge", code: 1,
+                                    userInfo: [NSLocalizedDescriptionKey: "App Group container unavailable"])
+                  }
+                  return root
+              }
+          }
+          SWIFT
+
+          cat > WearMemory/WearMemory.entitlements <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>application-identifier</key>
+              <string>TROLLTROLL.*</string>
+              <key>com.apple.developer.team-identifier</key>
+              <string>TROLLTROLL</string>
+              <key>get-task-allow</key>
+              <true/>
+              <key>keychain-access-groups</key>
+              <array>
+                  <string>TROLLTROLL.*</string>
+                  <string>com.apple.token</string>
+              </array>
+              <key>com.apple.security.application-groups</key>
+              <array>
+                  <string>group.local.pavel.WearMemory</string>
+              </array>
+          </dict>
+          </plist>
+          PLIST
+
+          python3 <<'PY'
+          from pathlib import Path
+
+          p = Path('WearMemory/AppModel.swift')
+          s = p.read_text()
+          s = s.replace('    private let voiceBridge = SharedVoiceBridge()\n',
+                        '    private let integrationBridge = AudioIntegrationBridge()\n    private var lastCompletedAudioFile: String?\n    private var lastCompletedAt: Date?\n', 1)
+          old = '''        audio.onSegmentCompleted = { [weak self] url, start, end in\n            self?.driveSync.enqueueAudio(url)\n            self?.voiceBridge.exportAudio(url, startedAt: start, endedAt: end)\n        }'''
+          new = '''        audio.onSegmentCompleted = { [weak self] url, start, end in\n            guard let self = self else { return }\n            // Google Drive is deliberately first and independent.\n            self.driveSync.enqueueAudio(url)\n            self.lastCompletedAudioFile = url.lastPathComponent\n            self.lastCompletedAt = end\n            self.integrationBridge.exportFinalizedAudio(url, startedAt: start, endedAt: end)\n            self.publishIntegrationStatus()\n        }'''
+          if old not in s:
+              raise SystemExit('AppModel segment hook marker missing')
+          s = s.replace(old, new, 1)
+          marker = '        UIDevice.current.isBatteryMonitoringEnabled = true\n'
+          observers = '''        audio.$isRecording\n            .sink { [weak self] _ in DispatchQueue.main.async { self?.publishIntegrationStatus() } }\n            .store(in: &cancellables)\n        audio.$statusText\n            .sink { [weak self] _ in DispatchQueue.main.async { self?.publishIntegrationStatus() } }\n            .store(in: &cancellables)\n        driveSync.$statusText\n            .sink { [weak self] _ in DispatchQueue.main.async { self?.publishIntegrationStatus() } }\n            .store(in: &cancellables)\n        driveSync.$pendingCount\n            .sink { [weak self] _ in DispatchQueue.main.async { self?.publishIntegrationStatus() } }\n            .store(in: &cancellables)\n        driveSync.$lastError\n            .sink { [weak self] _ in DispatchQueue.main.async { self?.publishIntegrationStatus() } }\n            .store(in: &cancellables)\n\n        UIDevice.current.isBatteryMonitoringEnabled = true\n'''
+          if marker not in s:
+              raise SystemExit('AppModel battery marker missing')
+          s = s.replace(marker, observers, 1)
+          marker = '    deinit {\n'
+          helper = '''    private func publishIntegrationStatus() {\n        let info = Bundle.main.infoDictionary ?? [:]\n        integrationBridge.publishStatus(.init(\n            bridgeVersion: AudioIntegrationBridge.bridgeVersion,\n            module: "audio",\n            appVersion: info["CFBundleShortVersionString"] as? String ?? "",\n            build: info["CFBundleVersion"] as? String ?? "",\n            isRecording: audio.isRecording,\n            audioStatus: audio.statusText,\n            driveStatus: driveSync.statusText,\n            drivePendingCount: driveSync.pendingCount,\n            driveLastError: driveSync.lastError,\n            lastCompletedAudioFile: lastCompletedAudioFile,\n            lastCompletedAt: lastCompletedAt,\n            updatedAt: Date()\n        ))\n    }\n\n    deinit {\n'''
+          if marker not in s:
+              raise SystemExit('AppModel deinit marker missing')
+          p.write_text(s.replace(marker, helper, 1))
+
+          p = Path('WearMemory/Info.plist')
+          s = p.read_text()
+          s = s.replace('<string>WearMemory</string>', '<string>WearMemory Audio</string>', 1)
+          s = s.replace('<string>1.6.5</string>', '<string>1.7.0</string>', 1)
+          s = s.replace('<string>24</string>', '<string>25</string>', 1)
+          marker = '''\t\t</dict>\n\t</array>\n</dict>'''
+          replacement = '''\t\t</dict>\n\t\t<dict>\n\t\t\t<key>CFBundleURLName</key>\n\t\t\t<string>WearMemory Audio Integration</string>\n\t\t\t<key>CFBundleURLSchemes</key>\n\t\t\t<array>\n\t\t\t\t<string>wearmemory-audio</string>\n\t\t\t</array>\n\t\t</dict>\n\t</array>\n</dict>'''
+          if marker not in s:
+              raise SystemExit('Info.plist URL marker missing')
+          p.write_text(s.replace(marker, replacement, 1))
+
+          p = Path('WearMemory/ContentView.swift')
+          s = p.read_text()
+          if 'Text("WearMemory")' not in s:
+              raise SystemExit('ContentView title marker missing')
+          p.write_text(s.replace('Text("WearMemory")', 'Text("WearMemory Audio")', 1))
+          PY
+
+      - name: Prove recording and Google Drive core are untouched
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/wmsuite/WearMemory
+          echo 'd87d3c1a053f92bf05032098bdd061ff467f2724642d1b0f96958fd1a1f15e25  AudioBufferManager.swift' | shasum -a 256 -c -
+          echo '120f39b7292bd1af81b3ad765e496dbbde3bd6773b62651439a311c5d960fbc1  GoogleDriveSync.swift' | shasum -a 256 -c -
+          grep -F 'self.driveSync.enqueueAudio(url)' AppModel.swift
+          grep -F 'self.integrationBridge.exportFinalizedAudio(url, startedAt: start, endedAt: end)' AppModel.swift
+          python3 - <<'PY'
+          from pathlib import Path
+          s = Path('AppModel.swift').read_text()
+          assert s.index('self.driveSync.enqueueAudio(url)') < s.index('self.integrationBridge.exportFinalizedAudio')
+          PY
+          grep -F 'TROLLTROLL.*' WearMemory.entitlements
+          grep -F 'keychain-access-groups' WearMemory.entitlements
+          grep -F 'group.local.pavel.WearMemory' WearMemory.entitlements
+
+      - name: Generate Xcode project
+        shell: bash
+        run: |
+          set -euo pipefail
+          brew install xcodegen
+          cd /tmp/wmsuite
+          xcodegen generate
+
+      - name: Build WearMemory Audio
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/wmsuite
+          xcodebuild \
+            -project WearMemorySuite.xcodeproj \
+            -scheme WearMemory \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/AudioDerived \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            TARGETED_DEVICE_FAMILY=1 \
+            build | tee /tmp/wearmemory-audio-build.log
+
+      - name: Sign with TrollStore-compatible fallback plus App Group
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/wmsuite
+          APP='build/AudioDerived/Build/Products/Release-iphoneos/WearMemory.app'
+          test -d "$APP"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist")" = 'local.pavel.WearMemory'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$APP/Info.plist")" = 'WearMemory Audio'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Info.plist")" = '1.7.0'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Info.plist")" = '25'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$APP/Info.plist")" = '15.0'
+          /usr/bin/file "$APP/WearMemory" | grep -F 'arm64'
+
+          /usr/bin/codesign --force --sign - --entitlements WearMemory/WearMemory.entitlements "$APP"
+          /usr/bin/codesign -d --entitlements :- "$APP" > /tmp/wmaudio-entitlements.plist 2>/dev/null
+          /usr/libexec/PlistBuddy -c 'Print :application-identifier' /tmp/wmaudio-entitlements.plist | grep -Fx 'TROLLTROLL.*'
+          /usr/libexec/PlistBuddy -c 'Print :com.apple.developer.team-identifier' /tmp/wmaudio-entitlements.plist | grep -Fx 'TROLLTROLL'
+          /usr/libexec/PlistBuddy -c 'Print :keychain-access-groups:0' /tmp/wmaudio-entitlements.plist | grep -Fx 'TROLLTROLL.*'
+          /usr/libexec/PlistBuddy -c 'Print :com.apple.security.application-groups:0' /tmp/wmaudio-entitlements.plist | grep -Fx 'group.local.pavel.WearMemory'
+
+      - name: Package verified IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/wmsuite
+          APP='build/AudioDerived/Build/Products/Release-iphoneos/WearMemory.app'
+          rm -rf /tmp/audio_payload
+          mkdir -p /tmp/audio_payload/Payload
+          cp -R "$APP" /tmp/audio_payload/Payload/
+          (cd /tmp/audio_payload && zip -qry -9 /tmp/WearMemoryAudio_v1.7.0b25_iOS15.ipa Payload)
+          unzip -t /tmp/WearMemoryAudio_v1.7.0b25_iOS15.ipa
+          shasum -a 256 /tmp/WearMemoryAudio_v1.7.0b25_iOS15.ipa > /tmp/WearMemoryAudio_v1.7.0b25_iOS15.ipa.sha256
+          cd /tmp/wmsuite
+          zip -qry -9 /tmp/WearMemoryAudio_v1.7.0_Source.zip WearMemory project.yml
+          shasum -a 256 /tmp/WearMemoryAudio_v1.7.0_Source.zip > /tmp/WearMemoryAudio_v1.7.0_Source.zip.sha256
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: WearMemoryAudio-v1.7.0-iOS15
+          path: |
+            /tmp/WearMemoryAudio_v1.7.0b25_iOS15.ipa
+            /tmp/WearMemoryAudio_v1.7.0b25_iOS15.ipa.sha256
+            /tmp/WearMemoryAudio_v1.7.0_Source.zip
+            /tmp/WearMemoryAudio_v1.7.0_Source.zip.sha256
+            /tmp/wmaudio-entitlements.plist
+            /tmp/wearmemory-audio-build.log
+          retention-days: 7
+
+      - name: Publish result branch
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          cd "$GITHUB_WORKSPACE"
+          git config user.name 'github-actions[bot]'
+          git config user.email '4189823+github-actions[bot]@users.noreply.github.com'
+          git fetch origin wearmemory-audio-v1.7.0-result 2>/dev/null
+          if git show-ref --verify --quiet refs/remotes/origin/wearmemory-audio-v1.7.0-result; then
+            git checkout -B wearmemory-audio-v1.7.0-result origin/wearmemory-audio-v1.7.0-result
+          else
+            git checkout --orphan wearmemory-audio-v1.7.0-result
+            git rm -rf . >/dev/null 2>&1 || true
+          fi
+          mkdir -p artifacts
+          cp /tmp/WearMemoryAudio_v1.7.0b25_iOS15.ipa artifacts/ 2>/dev/null || true
+          cp /tmp/WearMemoryAudio_v1.7.0b25_iOS15.ipa.sha256 artifacts/ 2>/dev/null || true
+          cp /tmp/WearMemoryAudio_v1.7.0_Source.zip artifacts/ 2>/dev/null || true
+          cp /tmp/WearMemoryAudio_v1.7.0_Source.zip.sha256 artifacts/ 2>/dev/null || true
+          cp /tmp/wmaudio-entitlements.plist artifacts/ 2>/dev/null || true
+          cp /tmp/wearmemory-audio-build.log artifacts/ 2>/dev/null || true
+          date -u +%FT%TZ > artifacts/last_run.txt
+          git add artifacts
+          git commit -m 'WearMemory Audio v1.7.0 build result' || true
+          git push origin HEAD:wearmemory-audio-v1.7.0-result
