@@ -1,0 +1,37 @@
+name: Export WearMemory Audio v1.7.1 IPA
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout verified result branch
+        uses: actions/checkout@v4
+        with:
+          ref: wearmemory-audio-v1.7.1-result
+
+      - name: Verify published IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f artifacts/WearMemoryAudio_v1.7.1b26_iOS15.ipa
+          grep -F 'd2be1190d4ecf8f6565dce5e9adb02fbb4265357a9b226ea627247f8b543dc62' artifacts/WearMemoryAudio_v1.7.1b26_iOS15.ipa.sha256
+          sha256sum artifacts/WearMemoryAudio_v1.7.1b26_iOS15.ipa | grep -F 'd2be1190d4ecf8f6565dce5e9adb02fbb4265357a9b226ea627247f8b543dc62'
+
+      - name: Upload verified package
+        uses: actions/upload-artifact@v4
+        with:
+          name: WearMemoryAudio-v1.7.1-Ready
+          path: |
+            artifacts/WearMemoryAudio_v1.7.1b26_iOS15.ipa
+            artifacts/WearMemoryAudio_v1.7.1b26_iOS15.ipa.sha256
+            artifacts/WearMemoryAudio_v1.7.1_Source.zip
+            artifacts/WearMemoryAudio_v1.7.1_Source.zip.sha256
+            artifacts/wmaudio171-entitlements.plist
+          retention-days: 7
