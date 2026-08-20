@@ -1,0 +1,200 @@
+Command line invocation:
+    /Applications/Xcode_16.4.app/Contents/Developer/usr/bin/xcodebuild -project WearMemoryAudio.xcodeproj -scheme WearMemory -configuration Release -sdk iphoneos -destination generic/platform=iOS -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO TARGETED_DEVICE_FAMILY=1 build
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+    CODE_SIGNING_REQUIRED = NO
+    SDKROOT = iphoneos18.5
+    TARGETED_DEVICE_FAMILY = 1
+
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (1 target)
+    Target 'WearMemory' in project 'WearMemoryAudio' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+Build description signature: 9964d33c683e8f7c8339c3111817fbf8
+Build description path: /tmp/wmaudio/build/Build/Intermediates.noindex/XCBuildData/9964d33c683e8f7c8339c3111817fbf8.xcbuilddata
+ClangStatCache /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk /tmp/wmaudio/build/SDKStatCaches.noindex/iphoneos18.5-22F76-a529daf784b3616c7c04a36aeb7f5c05.sdkstatcache
+    cd /tmp/wmaudio/WearMemoryAudio.xcodeproj
+    /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk -o /tmp/wmaudio/build/SDKStatCaches.noindex/iphoneos18.5-22F76-a529daf784b3616c7c04a36aeb7f5c05.sdkstatcache
+
+CreateBuildDirectory /tmp/wmaudio/build/Build/Products
+    cd /tmp/wmaudio/WearMemoryAudio.xcodeproj
+    builtin-create-build-directory /tmp/wmaudio/build/Build/Products
+
+CreateBuildDirectory /tmp/wmaudio/build/Build/Intermediates.noindex
+    cd /tmp/wmaudio/WearMemoryAudio.xcodeproj
+    builtin-create-build-directory /tmp/wmaudio/build/Build/Intermediates.noindex
+
+WriteAuxiliaryFile /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemoryAudio-bb9416086b204c11322ea8090f90b569-VFS-iphoneos/all-product-headers.yaml
+    cd /tmp/wmaudio/WearMemoryAudio.xcodeproj
+    write-file /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemoryAudio-bb9416086b204c11322ea8090f90b569-VFS-iphoneos/all-product-headers.yaml
+
+CreateBuildDirectory /tmp/wmaudio/build/Build/Products/Release-iphoneos
+    cd /tmp/wmaudio/WearMemoryAudio.xcodeproj
+    builtin-create-build-directory /tmp/wmaudio/build/Build/Products/Release-iphoneos
+
+CreateBuildDirectory /tmp/wmaudio/build/Build/Intermediates.noindex/EagerLinkingTBDs/Release-iphoneos
+    cd /tmp/wmaudio/WearMemoryAudio.xcodeproj
+    builtin-create-build-directory /tmp/wmaudio/build/Build/Intermediates.noindex/EagerLinkingTBDs/Release-iphoneos
+
+WriteAuxiliaryFile /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/WearMemory.hmap (in target 'WearMemory' from project 'WearMemoryAudio')
+    cd /tmp/wmaudio
+    write-file /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/WearMemory.hmap
+
+WriteAuxiliaryFile /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/WearMemory.DependencyStaticMetadataFileList (in target 'WearMemory' from project 'WearMemoryAudio')
+    cd /tmp/wmaudio
+    write-file /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/WearMemory.DependencyStaticMetadataFileList
+
+WriteAuxiliaryFile /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/WearMemory.DependencyMetadataFileList (in target 'WearMemory' from project 'WearMemoryAudio')
+    cd /tmp/wmaudio
+    write-file /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/WearMemory.DependencyMetadataFileList
+
+WriteAuxiliaryFile /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/WearMemory-project-headers.hmap (in target 'WearMemory' from project 'WearMemoryAudio')
+    cd /tmp/wmaudio
+    write-file /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/WearMemory-project-headers.hmap
+
+WriteAuxiliaryFile /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/WearMemory-own-target-headers.hmap (in target 'WearMemory' from project 'WearMemoryAudio')
+    cd /tmp/wmaudio
+    write-file /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/WearMemory-own-target-headers.hmap
+
+WriteAuxiliaryFile /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/WearMemory-generated-files.hmap (in target 'WearMemory' from project 'WearMemoryAudio')
+    cd /tmp/wmaudio
+    write-file /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/WearMemory-generated-files.hmap
+
+WriteAuxiliaryFile /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/WearMemory-all-target-headers.hmap (in target 'WearMemory' from project 'WearMemoryAudio')
+    cd /tmp/wmaudio
+    write-file /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/WearMemory-all-target-headers.hmap
+
+WriteAuxiliaryFile /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/WearMemory-all-non-framework-target-headers.hmap (in target 'WearMemory' from project 'WearMemoryAudio')
+    cd /tmp/wmaudio
+    write-file /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/WearMemory-all-non-framework-target-headers.hmap
+
+WriteAuxiliaryFile /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory_const_extract_protocols.json (in target 'WearMemory' from project 'WearMemoryAudio')
+    cd /tmp/wmaudio
+    write-file /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory_const_extract_protocols.json
+
+WriteAuxiliaryFile /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory.SwiftFileList (in target 'WearMemory' from project 'WearMemoryAudio')
+    cd /tmp/wmaudio
+    write-file /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory.SwiftFileList
+
+WriteAuxiliaryFile /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory.SwiftConstValuesFileList (in target 'WearMemory' from project 'WearMemoryAudio')
+    cd /tmp/wmaudio
+    write-file /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory.LinkFileList (in target 'WearMemory' from project 'WearMemoryAudio')
+    cd /tmp/wmaudio
+    write-file /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory.LinkFileList
+
+WriteAuxiliaryFile /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory-OutputFileMap.json (in target 'WearMemory' from project 'WearMemoryAudio')
+    cd /tmp/wmaudio
+    write-file /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory-OutputFileMap.json
+
+MkDir /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.app (in target 'WearMemory' from project 'WearMemoryAudio')
+    cd /tmp/wmaudio
+    /bin/mkdir -p /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.app
+
+ProcessInfoPlistFile /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.app/Info.plist /tmp/wmaudio/WearMemory/Info.plist (in target 'WearMemory' from project 'WearMemoryAudio')
+    cd /tmp/wmaudio
+    builtin-infoPlistUtility /tmp/wmaudio/WearMemory/Info.plist -producttype com.apple.product-type.application -genpkginfo /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.app/PkgInfo -expandbuildsettings -format binary -platform iphoneos -requiredArchitecture arm64 -o /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.app/Info.plist
+
+SwiftDriver WearMemory normal arm64 com.apple.xcode.tools.swift.compiler (in target 'WearMemory' from project 'WearMemoryAudio')
+    cd /tmp/wmaudio
+    builtin-SwiftDriver -- /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name WearMemory -O -whole-module-optimization -enforce-exclusivity\=checked @/tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory.SwiftFileList -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk -target arm64-apple-ios15.0 -g -module-cache-path /tmp/wmaudio/build/ModuleCache.noindex -Xfrontend -serialize-debugging-options -swift-version 5 -I /tmp/wmaudio/build/Build/Products/Release-iphoneos -F /tmp/wmaudio/build/Build/Products/Release-iphoneos -c -num-threads 3 -Xcc -ivfsstatcache -Xcc /tmp/wmaudio/build/SDKStatCaches.noindex/iphoneos18.5-22F76-a529daf784b3616c7c04a36aeb7f5c05.sdkstatcache -output-file-map /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/wmaudio/build/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/WearMemory-generated-files.hmap -Xcc -I/tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/WearMemory-own-target-headers.hmap -Xcc -I/tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/WearMemory-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/WearMemory-project-headers.hmap -Xcc -I/tmp/wmaudio/build/Build/Products/Release-iphoneos/include -Xcc -I/tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/DerivedSources-normal/arm64 -Xcc -I/tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/DerivedSources/arm64 -Xcc -I/tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/DerivedSources -emit-objc-header -emit-objc-header-path /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory-Swift.h -working-directory /tmp/wmaudio -no-emit-module-separately-wmo
+
+SwiftCompile normal arm64 Compiling\ AppModel.swift,\ AudioBufferManager.swift,\ AudioIntegrationBridge.swift,\ ContentView.swift,\ GoogleDriveSync.swift,\ WearMemoryApp.swift,\ WearMemoryAppDelegate.swift /tmp/wmaudio/WearMemory/AppModel.swift /tmp/wmaudio/WearMemory/AudioBufferManager.swift /tmp/wmaudio/WearMemory/AudioIntegrationBridge.swift /tmp/wmaudio/WearMemory/ContentView.swift /tmp/wmaudio/WearMemory/GoogleDriveSync.swift /tmp/wmaudio/WearMemory/WearMemoryApp.swift /tmp/wmaudio/WearMemory/WearMemoryAppDelegate.swift (in target 'WearMemory' from project 'WearMemoryAudio')
+
+CompileSwift normal arm64 (in target 'WearMemory' from project 'WearMemoryAudio')
+    cd /tmp/wmaudio
+    
+
+SwiftDriver\ Compilation WearMemory normal arm64 com.apple.xcode.tools.swift.compiler (in target 'WearMemory' from project 'WearMemoryAudio')
+    cd /tmp/wmaudio
+    builtin-Swift-Compilation -- /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name WearMemory -O -whole-module-optimization -enforce-exclusivity\=checked @/tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory.SwiftFileList -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk -target arm64-apple-ios15.0 -g -module-cache-path /tmp/wmaudio/build/ModuleCache.noindex -Xfrontend -serialize-debugging-options -swift-version 5 -I /tmp/wmaudio/build/Build/Products/Release-iphoneos -F /tmp/wmaudio/build/Build/Products/Release-iphoneos -c -num-threads 3 -Xcc -ivfsstatcache -Xcc /tmp/wmaudio/build/SDKStatCaches.noindex/iphoneos18.5-22F76-a529daf784b3616c7c04a36aeb7f5c05.sdkstatcache -output-file-map /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/wmaudio/build/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/WearMemory-generated-files.hmap -Xcc -I/tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/WearMemory-own-target-headers.hmap -Xcc -I/tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/WearMemory-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/WearMemory-project-headers.hmap -Xcc -I/tmp/wmaudio/build/Build/Products/Release-iphoneos/include -Xcc -I/tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/DerivedSources-normal/arm64 -Xcc -I/tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/DerivedSources/arm64 -Xcc -I/tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/DerivedSources -emit-objc-header -emit-objc-header-path /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory-Swift.h -working-directory /tmp/wmaudio -no-emit-module-separately-wmo
+
+SwiftDriverJobDiscovery normal arm64 Compiling AppModel.swift, AudioBufferManager.swift, AudioIntegrationBridge.swift, ContentView.swift, GoogleDriveSync.swift, WearMemoryApp.swift, WearMemoryAppDelegate.swift (in target 'WearMemory' from project 'WearMemoryAudio')
+
+SwiftDriver\ Compilation\ Requirements WearMemory normal arm64 com.apple.xcode.tools.swift.compiler (in target 'WearMemory' from project 'WearMemoryAudio')
+    cd /tmp/wmaudio
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name WearMemory -O -whole-module-optimization -enforce-exclusivity\=checked @/tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory.SwiftFileList -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk -target arm64-apple-ios15.0 -g -module-cache-path /tmp/wmaudio/build/ModuleCache.noindex -Xfrontend -serialize-debugging-options -swift-version 5 -I /tmp/wmaudio/build/Build/Products/Release-iphoneos -F /tmp/wmaudio/build/Build/Products/Release-iphoneos -c -num-threads 3 -Xcc -ivfsstatcache -Xcc /tmp/wmaudio/build/SDKStatCaches.noindex/iphoneos18.5-22F76-a529daf784b3616c7c04a36aeb7f5c05.sdkstatcache -output-file-map /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/wmaudio/build/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/WearMemory-generated-files.hmap -Xcc -I/tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/WearMemory-own-target-headers.hmap -Xcc -I/tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/WearMemory-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/WearMemory-project-headers.hmap -Xcc -I/tmp/wmaudio/build/Build/Products/Release-iphoneos/include -Xcc -I/tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/DerivedSources-normal/arm64 -Xcc -I/tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/DerivedSources/arm64 -Xcc -I/tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/DerivedSources -emit-objc-header -emit-objc-header-path /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory-Swift.h -working-directory /tmp/wmaudio -no-emit-module-separately-wmo
+
+SwiftMergeGeneratedHeaders /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/DerivedSources/WearMemory-Swift.h /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory-Swift.h (in target 'WearMemory' from project 'WearMemoryAudio')
+    cd /tmp/wmaudio
+    builtin-swiftHeaderTool -arch arm64 /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory-Swift.h -o /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/DerivedSources/WearMemory-Swift.h
+
+Copy /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.swiftmodule/arm64-apple-ios.swiftdoc /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory.swiftdoc (in target 'WearMemory' from project 'WearMemoryAudio')
+    cd /tmp/wmaudio
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory.swiftdoc /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.swiftmodule/arm64-apple-ios.swiftdoc
+
+Copy /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.swiftmodule/arm64-apple-ios.swiftmodule /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory.swiftmodule (in target 'WearMemory' from project 'WearMemoryAudio')
+    cd /tmp/wmaudio
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory.swiftmodule /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.swiftmodule/arm64-apple-ios.swiftmodule
+
+Copy /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.swiftmodule/arm64-apple-ios.abi.json /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory.abi.json (in target 'WearMemory' from project 'WearMemoryAudio')
+    cd /tmp/wmaudio
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory.abi.json /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.swiftmodule/arm64-apple-ios.abi.json
+
+Copy /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.swiftmodule/Project/arm64-apple-ios.swiftsourceinfo /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory.swiftsourceinfo (in target 'WearMemory' from project 'WearMemoryAudio')
+    cd /tmp/wmaudio
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory.swiftsourceinfo /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.swiftmodule/Project/arm64-apple-ios.swiftsourceinfo
+
+Ld /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.app/WearMemory normal (in target 'WearMemory' from project 'WearMemoryAudio')
+    cd /tmp/wmaudio
+    /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios15.0 -isysroot /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk -Os -L/tmp/wmaudio/build/Build/Intermediates.noindex/EagerLinkingTBDs/Release-iphoneos -L/tmp/wmaudio/build/Build/Products/Release-iphoneos -F/tmp/wmaudio/build/Build/Intermediates.noindex/EagerLinkingTBDs/Release-iphoneos -F/tmp/wmaudio/build/Build/Products/Release-iphoneos -filelist /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory.LinkFileList -Xlinker -rpath -Xlinker @executable_path/Frameworks -dead_strip -Xlinker -object_path_lto -Xlinker /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory_lto.o -Xlinker -dependency_info -Xlinker /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory.swiftmodule -o /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.app/WearMemory
+
+GenerateDSYMFile /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.app.dSYM /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.app/WearMemory (in target 'WearMemory' from project 'WearMemoryAudio')
+    cd /tmp/wmaudio
+    /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/dsymutil /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.app/WearMemory -o /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.app.dSYM
+
+CopySwiftLibs /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.app (in target 'WearMemory' from project 'WearMemoryAudio')
+    cd /tmp/wmaudio
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.app/WearMemory --scan-folder /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.app/Frameworks --scan-folder /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.app/PlugIns --scan-folder /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.app/SystemExtensions --scan-folder /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.app/Extensions --platform iphoneos --toolchain /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.app/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+Ignoring --strip-bitcode because --sign was not passed
+
+ExtractAppIntentsMetadata (in target 'WearMemory' from project 'WearMemoryAudio')
+    cd /tmp/wmaudio
+    /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --module-name WearMemory --sdk-root /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk --xcode-version 16F6 --platform-family iOS --deployment-target 15.0 --bundle-identifier local.pavel.WearMemory --output /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.app --target-triple arm64-apple-ios15.0 --binary-file /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.app/WearMemory --dependency-file /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory_dependency_info.dat --stringsdata-file /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory.SwiftFileList --metadata-file-list /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/WearMemory.DependencyMetadataFileList --static-metadata-file-list /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/WearMemory.DependencyStaticMetadataFileList --swift-const-vals-list /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-08-20 23:10:09.902 appintentsmetadataprocessor[9518:31547] Starting appintentsmetadataprocessor export
+2026-08-20 23:10:09.908 appintentsmetadataprocessor[9518:31547] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+
+AppIntentsSSUTraining (in target 'WearMemory' from project 'WearMemoryAudio')
+    cd /tmp/wmaudio
+    /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.app/Info.plist --temp-dir-path /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/ssu --bundle-id local.pavel.WearMemory --product-path /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.app --extracted-metadata-path /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.app/Metadata.appintents --metadata-file-list /tmp/wmaudio/build/Build/Intermediates.noindex/WearMemoryAudio.build/Release-iphoneos/WearMemory.build/WearMemory.DependencyMetadataFileList --archive-ssu-assets
+2026-08-20 23:10:09.948 appintentsnltrainingprocessor[9556:31631] Parsing options for appintentsnltrainingprocessor
+2026-08-20 23:10:09.950 appintentsnltrainingprocessor[9556:31631] No AppShortcuts found - Skipping.
+
+RegisterExecutionPolicyException /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.app (in target 'WearMemory' from project 'WearMemoryAudio')
+    cd /tmp/wmaudio
+    builtin-RegisterExecutionPolicyException /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.app
+
+Validate /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.app (in target 'WearMemory' from project 'WearMemoryAudio')
+    cd /tmp/wmaudio
+    builtin-validationUtility /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.app -infoplist-subpath Info.plist
+
+Touch /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.app (in target 'WearMemory' from project 'WearMemoryAudio')
+    cd /tmp/wmaudio
+    /usr/bin/touch -c /tmp/wmaudio/build/Build/Products/Release-iphoneos/WearMemory.app
+
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'WearMemory' from project 'WearMemoryAudio')
+** BUILD SUCCEEDED **
+
