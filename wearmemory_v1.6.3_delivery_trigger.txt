@@ -1,1 +1,1 @@
-trigger WearMemory v1.6.3 Drive retry build
+trigger WearMemory v1.6.4 Drive fix build
