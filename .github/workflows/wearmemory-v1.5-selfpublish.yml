@@ -8,6 +8,11 @@ on:
     paths:
       - '.github/workflows/wearmemory-v1.5-selfpublish.yml'
       - 'wearmemory_v1.5_trigger.txt'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'wearmemory_v1.5_delivery_trigger.txt'
 
 permissions:
   contents: write
@@ -113,7 +118,19 @@ jobs:
           tail -n 160 /tmp/wm15-build.log || true
           exit 0
 
+      - name: Upload IPA delivery artifact
+        if: ${{ hashFiles('/tmp/WearMemory_v1.5_BrowserPicker_iOS15.ipa') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: WearMemory-v1.5-BrowserPicker-iOS15
+          path: |
+            /tmp/WearMemory_v1.5_BrowserPicker_iOS15.ipa
+            /tmp/WearMemory_v1.5_BrowserPicker_iOS15.ipa.sha256
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Publish diagnostics and IPA to result branch
+        if: ${{ github.event_name != 'pull_request' }}
         shell: bash
         run: |
           set -euo pipefail
