@@ -1,0 +1,223 @@
+name: Build WearMemory v1.6.3 Drive Diagnostics IPA
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'wearmemory_v1.6.3_delivery_trigger.txt'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Checkout WearMemory v1.6 source carrier
+        uses: actions/checkout@v4
+        with:
+          ref: wearmemory-v1.6-playback-build
+          fetch-depth: 0
+
+      - name: Reconstruct source and apply v1.6.3 fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat wearmemory_v1.6_build/source.part1 \
+              wearmemory_v1.6_build/source.part2 \
+              wearmemory_v1.6_build/source.part3 \
+              wearmemory_v1.6_build/source.part4 \
+              > /tmp/WearMemory_v1.6_Source.b64
+          base64 -D -i /tmp/WearMemory_v1.6_Source.b64 -o /tmp/WearMemory_v1.6_Source.zip
+          echo '910095e4ad4db56f21d2219483aa4b2faa7b97f20d0f2e7aedaea5f3f9a23029  /tmp/WearMemory_v1.6_Source.zip' | shasum -a 256 -c -
+
+          rm -rf /tmp/WearMemory_v1.6.3_Source
+          mkdir -p /tmp/WearMemory_v1.6.3_Source
+          unzip -q /tmp/WearMemory_v1.6_Source.zip -d /tmp/WearMemory_v1.6.3_Source
+          cd /tmp/WearMemory_v1.6.3_Source
+
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+
+          # Preserve v1.6.1 immediate SwiftUI refresh for the recording button.
+          p = Path('WearMemory/AppModel.swift')
+          s = p.read_text()
+          if 'import Combine' not in s:
+              s = s.replace('import UIKit\n', 'import UIKit\nimport Combine\n', 1)
+          marker = '    private var batteryObserver: NSObjectProtocol?\n'
+          assert marker in s
+          if 'private var cancellables = Set<AnyCancellable>()' not in s:
+              s = s.replace(marker, marker + '    private var cancellables = Set<AnyCancellable>()\n', 1)
+          init_marker = '    init() {\n'
+          subscription = '''    init() {\n        audio.objectWillChange\n            .receive(on: DispatchQueue.main)\n            .sink { [weak self] _ in self?.objectWillChange.send() }\n            .store(in: &cancellables)\n\n'''
+          assert init_marker in s
+          if 'audio.objectWillChange' not in s:
+              s = s.replace(init_marker, subscription, 1)
+          p.write_text(s)
+
+          # Preserve v1.6.2 durable audio queue: finalized M4A is copied and queue is persisted
+          # synchronously before upload is attempted.
+          p = Path('WearMemory/GoogleDriveSync.swift')
+          s = p.read_text()
+          pattern = r'    func enqueueAudio\(_ sourceURL: URL\) \{.*?\n    \}\n\n    func flushQueue\(\) \{'
+          new_enqueue = r'''    func enqueueAudio(_ sourceURL: URL) {
+              guard syncEnabled else { return }
+
+              // AVAudioRecorderDelegate calls this only after the M4A has been finalized.
+              // Stage the file and persist the queue synchronously before returning.
+              workQueue.sync {
+                  guard self.fm.fileExists(atPath: sourceURL.path) else {
+                      self.setError("Очередь Google Drive: завершённый аудиофайл не найден")
+                      return
+                  }
+
+                  let size = (try? sourceURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+                  guard size > 0 else {
+                      self.setError("Очередь Google Drive: завершённый аудиофайл пуст")
+                      return
+                  }
+
+                  let target = self.pendingAudioDirectory.appendingPathComponent(sourceURL.lastPathComponent)
+                  do {
+                      if self.fm.fileExists(atPath: target.path) {
+                          try self.fm.removeItem(at: target)
+                      }
+                      try self.fm.copyItem(at: sourceURL, to: target)
+                  } catch {
+                      self.setError("Очередь Google Drive: \(error.localizedDescription)")
+                      return
+                  }
+
+                  var queue = self.loadQueue()
+                  let id = "audio:\(target.lastPathComponent)"
+                  queue.removeAll { $0.id == id }
+                  queue.append(PendingItem(id: id, kind: .audio, path: target.path))
+                  self.saveQueue(queue)
+
+                  // Upload starts only after the durable queue entry has been persisted.
+                  self.flushQueueLocked()
+              }
+          }
+
+          func flushQueue() {'''
+          s, count = re.subn(pattern, new_enqueue, s, count=1, flags=re.S)
+          assert count == 1, f'enqueueAudio function replace count={count}'
+          p.write_text(s)
+
+          # v1.6.3: show the exact Google Drive error directly in the card used on Home/Files.
+          # GoogleDriveSync already keeps the real HTTP/API message in lastError; older UI hid it.
+          p = Path('WearMemory/ContentView.swift')
+          s = p.read_text()
+          start = s.index('private struct GoogleDriveStorageCard: View {')
+          end = s.index('private extension View {', start)
+          block = s[start:end]
+          marker = '''            destinationRow(icon: "music.note", tint: .green, title: "Аудио → Audio Hören", path: driveSync.audioFolderDisplay)\n\n'''
+          assert marker in block
+          diagnostics = '''            if let error = driveSync.lastError, !error.isEmpty {\n                Divider().background(Color.white.opacity(0.08))\n                HStack(alignment: .top, spacing: 10) {\n                    Image(systemName: "exclamationmark.triangle.fill")\n                        .foregroundColor(.orange)\n                        .frame(width: 34)\n                    VStack(alignment: .leading, spacing: 4) {\n                        Text("Ошибка Google Drive")\n                            .font(.caption.weight(.semibold))\n                            .foregroundColor(.orange)\n                        Text(error)\n                            .font(.system(size: 10, design: .monospaced))\n                            .foregroundColor(.white.opacity(0.92))\n                            .fixedSize(horizontal: false, vertical: true)\n                            .textSelection(.enabled)\n                    }\n                    Spacer(minLength: 0)\n                }\n                .padding(14)\n            }\n\n'''
+          if 'Text("Ошибка Google Drive")' not in block:
+              block = block.replace(marker, marker + diagnostics, 1)
+          s = s[:start] + block + s[end:]
+          p.write_text(s)
+          PY
+
+          plutil -lint WearMemory/Info.plist
+          /usr/libexec/PlistBuddy -c 'Set :CFBundleShortVersionString 1.6.3' WearMemory/Info.plist
+          /usr/libexec/PlistBuddy -c 'Set :CFBundleVersion 21' WearMemory/Info.plist
+
+          grep -F 'audio.objectWillChange' WearMemory/AppModel.swift
+          grep -F 'workQueue.sync' WearMemory/GoogleDriveSync.swift
+          grep -F 'завершённый аудиофайл не найден' WearMemory/GoogleDriveSync.swift
+          grep -F 'queue.append(PendingItem(id: id, kind: .audio, path: target.path))' WearMemory/GoogleDriveSync.swift
+          grep -F 'Text("Ошибка Google Drive")' WearMemory/ContentView.swift
+          grep -F 'Text(error)' WearMemory/ContentView.swift
+          grep -F '.textSelection(.enabled)' WearMemory/ContentView.swift
+          grep -F 'activeRecorder.stop()' WearMemory/AudioBufferManager.swift
+          grep -F 'onSegmentCompleted?(url, start, end)' WearMemory/AudioBufferManager.swift
+
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('project.yml')
+          s = p.read_text()
+          old = '    info:\n      path: WearMemory/Info.plist\n'
+          marker = '        PRODUCT_NAME: WearMemory\n'
+          assert marker in s
+          if old in s:
+              s = s.replace(old, '')
+          if 'INFOPLIST_FILE: WearMemory/Info.plist' not in s:
+              s = s.replace(marker, marker + '        INFOPLIST_FILE: WearMemory/Info.plist\n', 1)
+          p.write_text(s)
+          PY
+
+          rm -f /tmp/WearMemory_v1.6.3_DriveDiagnostics_Source.zip
+          zip -qry -9 /tmp/WearMemory_v1.6.3_DriveDiagnostics_Source.zip . \
+            -x 'build/*' '*.DS_Store' '*/__MACOSX/*'
+          shasum -a 256 /tmp/WearMemory_v1.6.3_DriveDiagnostics_Source.zip > /tmp/WearMemory_v1.6.3_DriveDiagnostics_Source.zip.sha256
+
+      - name: Build arm64 iOS 15 app
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/WearMemory_v1.6.3_Source
+          brew install xcodegen
+          xcodegen generate
+          xcodebuild \
+            -project WearMemory.xcodeproj \
+            -scheme WearMemory \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            TARGETED_DEVICE_FAMILY=1 \
+            build | tee /tmp/wm163-build.log
+
+          APP='build/DerivedData/Build/Products/Release-iphoneos/WearMemory.app'
+          test -d "$APP"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Info.plist")" = '1.6.3'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Info.plist")" = '21'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$APP/Info.plist")" = '15.0'
+          /usr/bin/file "$APP/WearMemory" | grep -F 'arm64'
+          /usr/bin/codesign --force --sign - "$APP" || true
+
+          rm -rf Payload WearMemory_v1.6.3_DriveDiagnostics_iOS15.ipa WearMemory_v1.6.3_DriveDiagnostics_iOS15.ipa.sha256
+          mkdir Payload
+          cp -R "$APP" Payload/
+          zip -qry -9 WearMemory_v1.6.3_DriveDiagnostics_iOS15.ipa Payload -x '*.DS_Store' '*/__MACOSX/*'
+          unzip -t WearMemory_v1.6.3_DriveDiagnostics_iOS15.ipa
+          shasum -a 256 WearMemory_v1.6.3_DriveDiagnostics_iOS15.ipa > WearMemory_v1.6.3_DriveDiagnostics_iOS15.ipa.sha256
+          cp WearMemory_v1.6.3_DriveDiagnostics_iOS15.ipa /tmp/
+          cp WearMemory_v1.6.3_DriveDiagnostics_iOS15.ipa.sha256 /tmp/
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: WearMemory-v1.6.3-DriveDiagnostics-iOS15
+          path: |
+            /tmp/WearMemory_v1.6.3_DriveDiagnostics_iOS15.ipa
+            /tmp/WearMemory_v1.6.3_DriveDiagnostics_iOS15.ipa.sha256
+            /tmp/WearMemory_v1.6.3_DriveDiagnostics_Source.zip
+            /tmp/WearMemory_v1.6.3_DriveDiagnostics_Source.zip.sha256
+          retention-days: 7
+
+      - name: Publish artifacts to result branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin wearmemory-v1.6.3-result
+          git checkout -B wearmemory-v1.6.3-result origin/wearmemory-v1.6.3-result
+          mkdir -p artifacts
+          cp /tmp/WearMemory_v1.6.3_DriveDiagnostics_iOS15.ipa artifacts/
+          cp /tmp/WearMemory_v1.6.3_DriveDiagnostics_iOS15.ipa.sha256 artifacts/
+          cp /tmp/WearMemory_v1.6.3_DriveDiagnostics_Source.zip artifacts/
+          cp /tmp/WearMemory_v1.6.3_DriveDiagnostics_Source.zip.sha256 artifacts/
+          cp /tmp/wm163-build.log artifacts/build.log
+          echo 0 > artifacts/build_status.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '4189823+github-actions[bot]@users.noreply.github.com'
+          git add artifacts
+          git commit -m 'WearMemory v1.6.3 Drive diagnostics IPA' || true
+          git push origin HEAD:wearmemory-v1.6.3-result
