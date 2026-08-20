@@ -76,6 +76,28 @@ jobs:
               exit 41
             fi
 
+            # XcodeGen's `info:` stanza rewrites an existing Info.plist with defaults.
+            # Use the checked-in plist directly so OAuth URL types and v1.5 metadata survive the build.
+            python3 - <<'PY'
+            from pathlib import Path
+            p = Path('project.yml')
+            s = p.read_text()
+            old = "    info:\n      path: WearMemory/Info.plist\n"
+            if old not in s:
+                raise SystemExit('expected XcodeGen info stanza not found')
+            s = s.replace(old, '')
+            marker = '        PRODUCT_NAME: WearMemory\n'
+            if marker not in s:
+                raise SystemExit('PRODUCT_NAME marker not found')
+            s = s.replace(marker, marker + '        INFOPLIST_FILE: WearMemory/Info.plist\n', 1)
+            p.write_text(s)
+            PY
+            grep -F 'INFOPLIST_FILE: WearMemory/Info.plist' project.yml
+            if grep -q '^    info:' project.yml; then
+              echo 'ERROR: XcodeGen info generator is still enabled'
+              exit 42
+            fi
+
             brew install xcodegen
             xcodegen generate
 
@@ -93,6 +115,11 @@ jobs:
 
             APP="build/DerivedData/Build/Products/Release-iphoneos/WearMemory.app"
             test -d "$APP"
+            test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Info.plist")" = "1.5"
+            test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Info.plist")" = "15"
+            /usr/libexec/PlistBuddy -c 'Print :CFBundleURLTypes:0:CFBundleURLSchemes:0' "$APP/Info.plist" | \
+              grep -Fx 'com.googleusercontent.apps.923188036776-mos9ub27f4k3bhnodr8r4n46flsisptj'
+            /usr/bin/file "$APP/WearMemory" | grep -F 'arm64'
             /usr/bin/codesign --force --sign - "$APP" || true
 
             rm -rf Payload \
@@ -115,7 +142,7 @@ jobs:
           ) > /tmp/wm15-build.log 2>&1
           RC=$?
           echo "$RC" > /tmp/wm15-status.txt
-          tail -n 160 /tmp/wm15-build.log || true
+          tail -n 180 /tmp/wm15-build.log || true
           exit 0
 
       - name: Upload IPA delivery artifact
