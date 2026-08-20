@@ -1,0 +1,21 @@
+name: Dispatch WearMemory Drive Retry Build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'wm_dispatch_drive_retry.txt'
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch existing Drive retry workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh workflow run wearmemory-v1.6.3-drive-retry.yml --ref main
