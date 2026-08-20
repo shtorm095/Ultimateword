@@ -1,0 +1,153 @@
+name: Build WearMemory Voice Suite v0.1
+
+on:
+  push:
+    branches:
+      - wearmemory-voice-v0.1-build
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'wearmemory_voice_build/**'
+      - '.github/workflows/wearmemory-voice-v0.1-build.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Reconstruct and validate source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat wearmemory_voice_build/source.part00 \
+              wearmemory_voice_build/source.part01 \
+              wearmemory_voice_build/source.part02 \
+              wearmemory_voice_build/source.part03 \
+              wearmemory_voice_build/source.part04 \
+              wearmemory_voice_build/source.part05 \
+              wearmemory_voice_build/source.part06 \
+              wearmemory_voice_build/source.part07 > /tmp/src.b64
+          base64 -D -i /tmp/src.b64 -o /tmp/source.zip
+          echo 'f546bd8b3ef45667f18703a3555fe08177fbd4c73fedba3195a4ca4c7aad19c9  /tmp/source.zip' | shasum -a 256 -c -
+          rm -rf /tmp/wmvoice
+          mkdir -p /tmp/wmvoice
+          unzip -q /tmp/source.zip -d /tmp/wmvoice
+          plutil -lint /tmp/wmvoice/WearMemory/Info.plist
+          plutil -lint /tmp/wmvoice/WearMemoryVoice/Info.plist
+          plutil -lint /tmp/wmvoice/WearMemory/WearMemory.entitlements
+          plutil -lint /tmp/wmvoice/WearMemoryVoice/WearMemoryVoice.entitlements
+          grep -F 'group.local.pavel.WearMemory' /tmp/wmvoice/WearMemory/WearMemory.entitlements
+          grep -F 'group.local.pavel.WearMemory' /tmp/wmvoice/WearMemoryVoice/WearMemoryVoice.entitlements
+          grep -F 'voiceBridge.exportAudio' /tmp/wmvoice/WearMemory/AppModel.swift
+          grep -F 'VoiceFingerprintEngine' /tmp/wmvoice/WearMemoryVoice/VoiceProcessor.swift
+
+      - name: Generate Xcode project
+        shell: bash
+        run: |
+          set -euo pipefail
+          brew install xcodegen
+          cd /tmp/wmvoice
+          xcodegen generate
+          xcodebuild -list -project WearMemorySuite.xcodeproj
+
+      - name: Build WearMemory
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/wmvoice
+          xcodebuild \
+            -project WearMemorySuite.xcodeproj \
+            -scheme WearMemory \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/WearMemoryDerived \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            TARGETED_DEVICE_FAMILY=1 \
+            build | tee /tmp/wearmemory-build.log
+
+      - name: Build WearMemory Voice
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/wmvoice
+          xcodebuild \
+            -project WearMemorySuite.xcodeproj \
+            -scheme WearMemoryVoice \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/VoiceDerived \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            TARGETED_DEVICE_FAMILY=1 \
+            build | tee /tmp/wearmemory-voice-build.log
+
+      - name: Package and verify IPAs
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT=/tmp/wmvoice
+          WM_APP="$ROOT/build/WearMemoryDerived/Build/Products/Release-iphoneos/WearMemory.app"
+          VOICE_APP="$ROOT/build/VoiceDerived/Build/Products/Release-iphoneos/WearMemoryVoice.app"
+          test -d "$WM_APP"
+          test -d "$VOICE_APP"
+
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$WM_APP/Info.plist")" = '1.7.0'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$WM_APP/Info.plist")" = '26'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$WM_APP/Info.plist")" = '15.0'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$WM_APP/Info.plist")" = 'local.pavel.WearMemory'
+
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$VOICE_APP/Info.plist")" = '0.1'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$VOICE_APP/Info.plist")" = '1'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$VOICE_APP/Info.plist")" = '15.0'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$VOICE_APP/Info.plist")" = 'local.pavel.WearMemoryVoice'
+
+          /usr/bin/file "$WM_APP/WearMemory" | grep -F 'arm64'
+          /usr/bin/file "$VOICE_APP/WearMemoryVoice" | grep -F 'arm64'
+
+          /usr/bin/codesign --force --sign - --entitlements "$ROOT/WearMemory/WearMemory.entitlements" "$WM_APP"
+          /usr/bin/codesign --force --sign - --entitlements "$ROOT/WearMemoryVoice/WearMemoryVoice.entitlements" "$VOICE_APP"
+          /usr/bin/codesign --verify --deep --strict "$WM_APP"
+          /usr/bin/codesign --verify --deep --strict "$VOICE_APP"
+          /usr/bin/codesign -d --entitlements :- "$WM_APP" > /tmp/wm-entitlements.txt 2>&1
+          /usr/bin/codesign -d --entitlements :- "$VOICE_APP" > /tmp/voice-entitlements.txt 2>&1
+          grep -F 'group.local.pavel.WearMemory' /tmp/wm-entitlements.txt
+          grep -F 'group.local.pavel.WearMemory' /tmp/voice-entitlements.txt
+
+          rm -rf "$ROOT/Payload"
+          mkdir "$ROOT/Payload"
+          cp -R "$WM_APP" "$ROOT/Payload/"
+          cd "$ROOT"
+          zip -qry -9 /tmp/WearMemory_v1.7.0_VoiceBridge_iOS15.ipa Payload -x '*.DS_Store' '*/__MACOSX/*'
+          rm -rf Payload
+          mkdir Payload
+          cp -R "$VOICE_APP" Payload/
+          zip -qry -9 /tmp/WearMemoryVoice_v0.1_SpeakerID_iOS15.ipa Payload -x '*.DS_Store' '*/__MACOSX/*'
+
+          unzip -t /tmp/WearMemory_v1.7.0_VoiceBridge_iOS15.ipa
+          unzip -t /tmp/WearMemoryVoice_v0.1_SpeakerID_iOS15.ipa
+          shasum -a 256 /tmp/WearMemory_v1.7.0_VoiceBridge_iOS15.ipa > /tmp/WearMemory_v1.7.0_VoiceBridge_iOS15.ipa.sha256
+          shasum -a 256 /tmp/WearMemoryVoice_v0.1_SpeakerID_iOS15.ipa > /tmp/WearMemoryVoice_v0.1_SpeakerID_iOS15.ipa.sha256
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: WearMemory-Voice-Suite-iOS15
+          path: |
+            /tmp/WearMemory_v1.7.0_VoiceBridge_iOS15.ipa
+            /tmp/WearMemory_v1.7.0_VoiceBridge_iOS15.ipa.sha256
+            /tmp/WearMemoryVoice_v0.1_SpeakerID_iOS15.ipa
+            /tmp/WearMemoryVoice_v0.1_SpeakerID_iOS15.ipa.sha256
+            /tmp/wearmemory-build.log
+            /tmp/wearmemory-voice-build.log
+            /tmp/wm-entitlements.txt
+            /tmp/voice-entitlements.txt
+          retention-days: 7
