@@ -24,7 +24,8 @@ jobs:
           test -f artifacts/WearMemoryVoice_v0.1_iOS15.ipa
           grep -F '1aebd494226aefbd650bec4990ba9fb3388f3e76b083aff9d28e16f133d10861' artifacts/WearMemory_v1.6.5b24_MinimalVoiceBridge_iOS15.ipa.sha256
           sha256sum artifacts/WearMemory_v1.6.5b24_MinimalVoiceBridge_iOS15.ipa | grep -F '1aebd494226aefbd650bec4990ba9fb3388f3e76b083aff9d28e16f133d10861'
-          sha256sum -c <(sed 's#/tmp/##' artifacts/WearMemoryVoice_v0.1_iOS15.ipa.sha256)
+          grep -F 'a4977dde1d32d8b1406a12eadfa74877d520a3cffe7c02e148e58a8f294f5b8e' artifacts/WearMemoryVoice_v0.1_iOS15.ipa.sha256
+          sha256sum artifacts/WearMemoryVoice_v0.1_iOS15.ipa | grep -F 'a4977dde1d32d8b1406a12eadfa74877d520a3cffe7c02e148e58a8f294f5b8e'
 
       - name: Upload verified IPA bundle
         uses: actions/upload-artifact@v4
