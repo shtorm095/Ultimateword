@@ -122,8 +122,8 @@ jobs:
 
           /usr/bin/codesign --force --sign - --entitlements WearMemory/WearMemory.entitlements "$WM_APP"
           /usr/bin/codesign --force --sign - --entitlements WearMemoryVoice/WearMemoryVoice.entitlements "$VOICE_APP"
-          /usr/bin/codesign -d --entitlements :- "$WM_APP" 2>/tmp/wm-entitlements.plist
-          /usr/bin/codesign -d --entitlements :- "$VOICE_APP" 2>/tmp/voice-entitlements.plist
+          /usr/bin/codesign -d --entitlements :- "$WM_APP" > /tmp/wm-entitlements.plist 2>/dev/null
+          /usr/bin/codesign -d --entitlements :- "$VOICE_APP" > /tmp/voice-entitlements.plist 2>/dev/null
           grep -F 'group.local.pavel.WearMemory' /tmp/wm-entitlements.plist
           grep -F 'group.local.pavel.WearMemory' /tmp/voice-entitlements.plist
 
