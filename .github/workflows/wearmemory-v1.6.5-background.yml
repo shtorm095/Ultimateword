@@ -121,6 +121,7 @@ jobs:
           cp /tmp/WearMemory_v1.6.5_BackgroundDrive_iOS15.ipa.sha256 artifacts/
           cp /tmp/wm165-build.log artifacts/build.log
           echo 0 > artifacts/build_status.txt
+          echo "$GITHUB_RUN_ID" > artifacts/run_id.txt
           git config user.name 'github-actions[bot]'
           git config user.email '4189823+github-actions[bot]@users.noreply.github.com'
           git add artifacts
