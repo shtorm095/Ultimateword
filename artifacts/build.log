@@ -32,8 +32,8 @@ ExecuteExternalTool /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/X
 
 ExecuteExternalTool /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
 
-Build description signature: fdf791b8729dc70f82e3e2baecd6be9d
-Build description path: /tmp/WearMemory_v1.6.2_Source/build/DerivedData/Build/Intermediates.noindex/XCBuildData/fdf791b8729dc70f82e3e2baecd6be9d.xcbuilddata
+Build description signature: 1c8322bedf1c9e2822835d2000a2cf83
+Build description path: /tmp/WearMemory_v1.6.2_Source/build/DerivedData/Build/Intermediates.noindex/XCBuildData/1c8322bedf1c9e2822835d2000a2cf83.xcbuilddata
 ClangStatCache /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk /tmp/WearMemory_v1.6.2_Source/build/DerivedData/SDKStatCaches.noindex/iphoneos18.5-22F76-a529daf784b3616c7c04a36aeb7f5c05.sdkstatcache
     cd /tmp/WearMemory_v1.6.2_Source/WearMemory.xcodeproj
     /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk -o /tmp/WearMemory_v1.6.2_Source/build/DerivedData/SDKStatCaches.noindex/iphoneos18.5-22F76-a529daf784b3616c7c04a36aeb7f5c05.sdkstatcache
@@ -46,13 +46,13 @@ CreateBuildDirectory /tmp/WearMemory_v1.6.2_Source/build/DerivedData/Build/Inter
     cd /tmp/WearMemory_v1.6.2_Source/WearMemory.xcodeproj
     builtin-create-build-directory /tmp/WearMemory_v1.6.2_Source/build/DerivedData/Build/Intermediates.noindex
 
-CreateBuildDirectory /tmp/WearMemory_v1.6.2_Source/build/DerivedData/Build/Products/Release-iphoneos
-    cd /tmp/WearMemory_v1.6.2_Source/WearMemory.xcodeproj
-    builtin-create-build-directory /tmp/WearMemory_v1.6.2_Source/build/DerivedData/Build/Products/Release-iphoneos
-
 WriteAuxiliaryFile /tmp/WearMemory_v1.6.2_Source/build/DerivedData/Build/Intermediates.noindex/WearMemory.build/Release-iphoneos/WearMemory-7c0290c2480c1fe29033384dd417ab2a-VFS-iphoneos/all-product-headers.yaml
     cd /tmp/WearMemory_v1.6.2_Source/WearMemory.xcodeproj
     write-file /tmp/WearMemory_v1.6.2_Source/build/DerivedData/Build/Intermediates.noindex/WearMemory.build/Release-iphoneos/WearMemory-7c0290c2480c1fe29033384dd417ab2a-VFS-iphoneos/all-product-headers.yaml
+
+CreateBuildDirectory /tmp/WearMemory_v1.6.2_Source/build/DerivedData/Build/Products/Release-iphoneos
+    cd /tmp/WearMemory_v1.6.2_Source/WearMemory.xcodeproj
+    builtin-create-build-directory /tmp/WearMemory_v1.6.2_Source/build/DerivedData/Build/Products/Release-iphoneos
 
 CreateBuildDirectory /tmp/WearMemory_v1.6.2_Source/build/DerivedData/Build/Intermediates.noindex/EagerLinkingTBDs/Release-iphoneos
     cd /tmp/WearMemory_v1.6.2_Source/WearMemory.xcodeproj
@@ -180,8 +180,8 @@ Ignoring --strip-bitcode because --sign was not passed
 ExtractAppIntentsMetadata (in target 'WearMemory' from project 'WearMemory')
     cd /tmp/WearMemory_v1.6.2_Source
     /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --module-name WearMemory --sdk-root /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk --xcode-version 16F6 --platform-family iOS --deployment-target 15.0 --bundle-identifier local.pavel.WearMemory --output /tmp/WearMemory_v1.6.2_Source/build/DerivedData/Build/Products/Release-iphoneos/WearMemory.app --target-triple arm64-apple-ios15.0 --binary-file /tmp/WearMemory_v1.6.2_Source/build/DerivedData/Build/Products/Release-iphoneos/WearMemory.app/WearMemory --dependency-file /tmp/WearMemory_v1.6.2_Source/build/DerivedData/Build/Intermediates.noindex/WearMemory.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory_dependency_info.dat --stringsdata-file /tmp/WearMemory_v1.6.2_Source/build/DerivedData/Build/Intermediates.noindex/WearMemory.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /tmp/WearMemory_v1.6.2_Source/build/DerivedData/Build/Intermediates.noindex/WearMemory.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory.SwiftFileList --metadata-file-list /tmp/WearMemory_v1.6.2_Source/build/DerivedData/Build/Intermediates.noindex/WearMemory.build/Release-iphoneos/WearMemory.build/WearMemory.DependencyMetadataFileList --static-metadata-file-list /tmp/WearMemory_v1.6.2_Source/build/DerivedData/Build/Intermediates.noindex/WearMemory.build/Release-iphoneos/WearMemory.build/WearMemory.DependencyStaticMetadataFileList --swift-const-vals-list /tmp/WearMemory_v1.6.2_Source/build/DerivedData/Build/Intermediates.noindex/WearMemory.build/Release-iphoneos/WearMemory.build/Objects-normal/arm64/WearMemory.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
-2026-08-20 17:22:33.406 appintentsmetadataprocessor[3849:15424] Starting appintentsmetadataprocessor export
-2026-08-20 17:22:33.410 appintentsmetadataprocessor[3849:15424] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+2026-08-20 17:24:52.253 appintentsmetadataprocessor[2186:9054] Starting appintentsmetadataprocessor export
+2026-08-20 17:24:52.259 appintentsmetadataprocessor[2186:9054] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
 
 GenerateDSYMFile /tmp/WearMemory_v1.6.2_Source/build/DerivedData/Build/Products/Release-iphoneos/WearMemory.app.dSYM /tmp/WearMemory_v1.6.2_Source/build/DerivedData/Build/Products/Release-iphoneos/WearMemory.app/WearMemory (in target 'WearMemory' from project 'WearMemory')
     cd /tmp/WearMemory_v1.6.2_Source
@@ -190,8 +190,8 @@ GenerateDSYMFile /tmp/WearMemory_v1.6.2_Source/build/DerivedData/Build/Products/
 AppIntentsSSUTraining (in target 'WearMemory' from project 'WearMemory')
     cd /tmp/WearMemory_v1.6.2_Source
     /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /tmp/WearMemory_v1.6.2_Source/build/DerivedData/Build/Products/Release-iphoneos/WearMemory.app/Info.plist --temp-dir-path /tmp/WearMemory_v1.6.2_Source/build/DerivedData/Build/Intermediates.noindex/WearMemory.build/Release-iphoneos/WearMemory.build/ssu --bundle-id local.pavel.WearMemory --product-path /tmp/WearMemory_v1.6.2_Source/build/DerivedData/Build/Products/Release-iphoneos/WearMemory.app --extracted-metadata-path /tmp/WearMemory_v1.6.2_Source/build/DerivedData/Build/Products/Release-iphoneos/WearMemory.app/Metadata.appintents --metadata-file-list /tmp/WearMemory_v1.6.2_Source/build/DerivedData/Build/Intermediates.noindex/WearMemory.build/Release-iphoneos/WearMemory.build/WearMemory.DependencyMetadataFileList --archive-ssu-assets
-2026-08-20 17:22:33.445 appintentsnltrainingprocessor[3853:15442] Parsing options for appintentsnltrainingprocessor
-2026-08-20 17:22:33.447 appintentsnltrainingprocessor[3853:15442] No AppShortcuts found - Skipping.
+2026-08-20 17:24:52.286 appintentsnltrainingprocessor[2188:9063] Parsing options for appintentsnltrainingprocessor
+2026-08-20 17:24:52.287 appintentsnltrainingprocessor[2188:9063] No AppShortcuts found - Skipping.
 
 RegisterExecutionPolicyException /tmp/WearMemory_v1.6.2_Source/build/DerivedData/Build/Products/Release-iphoneos/WearMemory.app (in target 'WearMemory' from project 'WearMemory')
     cd /tmp/WearMemory_v1.6.2_Source
