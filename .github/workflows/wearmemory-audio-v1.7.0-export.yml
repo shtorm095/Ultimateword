@@ -1,0 +1,40 @@
+name: Export WearMemory Audio v1.7.0 IPA
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout verified result branch
+        uses: actions/checkout@v4
+        with:
+          ref: wearmemory-audio-v1.7.0-result
+
+      - name: Verify published IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f artifacts/WearMemoryAudio_v1.7.0b25_iOS15.ipa
+          grep -F 'e9727f6bd67ff69f2691adecaf8600b17f4a1f37e33ebe490f8f869587f10484' artifacts/WearMemoryAudio_v1.7.0b25_iOS15.ipa.sha256
+          sha256sum artifacts/WearMemoryAudio_v1.7.0b25_iOS15.ipa | grep -F 'e9727f6bd67ff69f2691adecaf8600b17f4a1f37e33ebe490f8f869587f10484'
+          test -f artifacts/wmaudio-entitlements.plist
+          grep -F 'group.local.pavel.WearMemory' artifacts/wmaudio-entitlements.plist
+          grep -F 'TROLLTROLL.*' artifacts/wmaudio-entitlements.plist
+
+      - name: Upload verified IPA bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: WearMemoryAudio-v1.7.0-Verified-IPA
+          path: |
+            artifacts/WearMemoryAudio_v1.7.0b25_iOS15.ipa
+            artifacts/WearMemoryAudio_v1.7.0b25_iOS15.ipa.sha256
+            artifacts/WearMemoryAudio_v1.7.0_Source.zip
+            artifacts/WearMemoryAudio_v1.7.0_Source.zip.sha256
+            artifacts/wmaudio-entitlements.plist
+          retention-days: 7
