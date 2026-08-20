@@ -5,6 +5,10 @@ on:
     branches: [main]
     paths:
       - 'wm_v165_trigger.txt'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'wm_v165_pr_trigger.txt'
   workflow_dispatch:
 
 permissions:
