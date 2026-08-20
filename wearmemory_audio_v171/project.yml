@@ -1,0 +1,32 @@
+name: WearMemoryAudio
+options:
+  bundleIdPrefix: local.pavel
+  deploymentTarget:
+    iOS: '15.0'
+settings:
+  base:
+    SWIFT_VERSION: '5.0'
+    TARGETED_DEVICE_FAMILY: '1'
+targets:
+  WearMemory:
+    type: application
+    platform: iOS
+    sources:
+      - path: WearMemory/AppModel.swift
+      - path: WearMemory/AudioBufferManager.swift
+      - path: WearMemory/AudioIntegrationBridge.swift
+      - path: WearMemory/ContentView.swift
+      - path: WearMemory/GoogleDriveSync.swift
+      - path: WearMemory/WearMemoryApp.swift
+      - path: WearMemory/WearMemoryAppDelegate.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: local.pavel.WearMemory
+        PRODUCT_NAME: WearMemory
+        INFOPLIST_FILE: WearMemory/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_ENTITLEMENTS: WearMemory/WearMemory.entitlements
+        CODE_SIGN_STYLE: Automatic
+        IPHONEOS_DEPLOYMENT_TARGET: '15.0'
+    scheme:
+      testTargets: []
