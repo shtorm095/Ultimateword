@@ -3,6 +3,8 @@ name: Build WearMemory v1.4 Final 60s
 on:
   push:
     branches: [wearmemory-v1.4-final-build]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
