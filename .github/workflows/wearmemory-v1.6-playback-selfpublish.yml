@@ -8,6 +8,11 @@ on:
     paths:
       - '.github/workflows/wearmemory-v1.6-playback-selfpublish.yml'
       - 'wearmemory_v1.6_trigger.txt'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'wearmemory_v1.6_delivery_trigger.txt'
 
 permissions:
   contents: write
