@@ -44,7 +44,9 @@ jobs:
           mkdir -p /tmp/source-inspect
           cp WearMemory/*.swift /tmp/source-inspect/
           cp WearMemory/Info.plist /tmp/source-inspect/
-          grep -RniE 'drive|upload|queue|AudioInbox|m4a' WearMemory > /tmp/source-inspect/search.txt || true
+          cp project.yml /tmp/source-inspect/ || true
+          find WearMemory -maxdepth 1 -name '*.entitlements' -exec cp {} /tmp/source-inspect/ \; || true
+          grep -RniE 'drive|upload|queue|AudioInbox|m4a|application-groups|group.local' WearMemory project.yml > /tmp/source-inspect/search.txt || true
 
       - name: Upload source inspection
         uses: actions/upload-artifact@v4
