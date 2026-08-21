@@ -1,6 +1,7 @@
 from pathlib import Path
+import os
 
-root = Path('/tmp/wm166')
+root = Path(os.environ.get('WM_AUDIO_ROOT', '/tmp/wm166'))
 appmodel = root / 'WearMemory/AppModel.swift'
 project = root / 'project.yml'
 info = root / 'WearMemory/Info.plist'
