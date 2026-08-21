@@ -36,6 +36,8 @@ jobs:
           set -euo pipefail
           cd /tmp/wmtext-src
           patch -p1 < "$GITHUB_WORKSPACE/wearmemory_text_v101/TextProcessor.patch"
+          sed -i '' 's/    let drive = TextDriveSync()/    var drive = TextDriveSync()/' WearMemoryText/TextAppModel.swift
+          grep -q 'var drive = TextDriveSync()' WearMemoryText/TextAppModel.swift
           /usr/libexec/PlistBuddy -c 'Set :CFBundleShortVersionString 1.0.1' WearMemoryText/Info.plist
           /usr/libexec/PlistBuddy -c 'Set :CFBundleVersion 2' WearMemoryText/Info.plist
           grep -q 'request.shouldReportPartialResults = true' WearMemoryText/TextProcessor.swift
