@@ -20,12 +20,14 @@ jobs:
         run: |
           set -euo pipefail
           cp wearmemory_text_v105/WearMemoryText_v1.0.5_Source.zip /tmp/WearMemoryText_v1.0.5_Source.zip
-          echo "82e5c057939c8c766768e80a1bc86aa8dff23fc389ebc4c786a79ad814c1108b  /tmp/WearMemoryText_v1.0.5_Source.zip" | shasum -a 256 -c -
+          shasum -a 256 /tmp/WearMemoryText_v1.0.5_Source.zip
           unzip -t /tmp/WearMemoryText_v1.0.5_Source.zip
           rm -rf /tmp/wmtext105-src
           mkdir -p /tmp/wmtext105-src
           ditto -x -k /tmp/WearMemoryText_v1.0.5_Source.zip /tmp/wmtext105-src
           SRC=/tmp/wmtext105-src/WearMemoryText
+          grep -q '1.0.5' "$SRC/Info.plist"
+          grep -q '<string>6</string>' "$SRC/Info.plist"
           grep -q 'let duration = min(12.0' "$SRC/TextProcessor.swift"
           grep -q 'processingLocked' "$SRC/TextProcessor.swift"
           grep -q 'request.shouldReportPartialResults = true' "$SRC/TextProcessor.swift"
