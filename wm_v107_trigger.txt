@@ -1,1 +1,2 @@
 WearMemory Text v1.0.7 adaptive 60s -> 30s Speech segmentation
+trigger 2
