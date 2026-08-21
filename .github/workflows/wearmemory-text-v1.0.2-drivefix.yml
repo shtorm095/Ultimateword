@@ -30,7 +30,7 @@ jobs:
           unzip -t /tmp/WearMemoryText_v1.0.0_Source.zip
           ditto -x -k /tmp/WearMemoryText_v1.0.0_Source.zip /tmp/wmtext102-src
 
-          base64 --decode wearmemory_text_v101/speech-fix.patch.gz.b64 > /tmp/wmt101.patch.gz
+          base64 -D -i wearmemory_text_v101/speech-fix.patch.gz.b64 -o /tmp/wmt101.patch.gz
           gunzip -c /tmp/wmt101.patch.gz > /tmp/wmt101.patch
           cd /tmp/wmtext102-src
           patch -p4 < /tmp/wmt101.patch
