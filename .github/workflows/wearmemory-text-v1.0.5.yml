@@ -19,15 +19,30 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cp wearmemory_text_v101/WearMemoryText_v1.0.1_Source.zip /tmp/WearMemoryText_v1.0.1_Source.zip
-          unzip -t /tmp/WearMemoryText_v1.0.1_Source.zip
           rm -rf /tmp/wmtext105-src
           mkdir -p /tmp/wmtext105-src
-          ditto -x -k /tmp/WearMemoryText_v1.0.1_Source.zip /tmp/wmtext105-src
-          base64 -D < wearmemory_text_v105/speech-fix-v105.patch.gz.b64 | gunzip > /tmp/wmtext105.patch
-          echo "863ad1a0d4fcade0faa474fb011a1e6a3a1cbe507754ddccc063f4a5775abc3b  /tmp/wmtext105.patch" | shasum -a 256 -c -
+          cat wearmemory_text_v100/source.part00 \
+              wearmemory_text_v100/source.part01 \
+              wearmemory_text_v100/source.part02 \
+              wearmemory_text_v100/source.part03 \
+              wearmemory_text_v100/source.part04 \
+            | base64 --decode > /tmp/WearMemoryText_v1.0.0_Source.zip
+          unzip -t /tmp/WearMemoryText_v1.0.0_Source.zip
+          ditto -x -k /tmp/WearMemoryText_v1.0.0_Source.zip /tmp/wmtext105-src
+
+          base64 -D -i wearmemory_text_v101/speech-fix.patch.gz.b64 -o /tmp/wmt101.patch.gz
+          echo 'b2077cfa763ab2f8e1b4d494ac61755921bdbc81d8c75f91ce1005591a10d6c5  /tmp/wmt101.patch.gz' | shasum -a 256 -c -
+          gunzip -c /tmp/wmt101.patch.gz > /tmp/wmt101.patch
           cd /tmp/wmtext105-src
+          patch -p4 < /tmp/wmt101.patch
+          sed -i '' 's/^    let drive = TextDriveSync()/    var drive = TextDriveSync()/' WearMemoryText/TextAppModel.swift
+          grep -q '^    var drive = TextDriveSync()' WearMemoryText/TextAppModel.swift
+
+          base64 -D -i "$GITHUB_WORKSPACE/wearmemory_text_v105/speech-fix-v105.patch.gz.b64" -o /tmp/wmt105.patch.gz
+          gunzip -c /tmp/wmt105.patch.gz > /tmp/wmtext105.patch
+          echo '863ad1a0d4fcade0faa474fb011a1e6a3a1cbe507754ddccc063f4a5775abc3b  /tmp/wmtext105.patch' | shasum -a 256 -c -
           patch -p0 < /tmp/wmtext105.patch
+
           SRC=/tmp/wmtext105-src/WearMemoryText
           grep -q '1.0.5' "$SRC/Info.plist"
           grep -q '<string>6</string>' "$SRC/Info.plist"
@@ -42,7 +57,7 @@ jobs:
           ! grep -R -q 'AVAudioRecorder' "$SRC"
           ! grep -R -q 'Audio Hören' "$SRC"
           cd /tmp/wmtext105-src
-          zip -qry /tmp/WearMemoryText_v1.0.5_Source.zip .
+          zip -qry /tmp/WearMemoryText_v1.0.5_Source.zip WearMemoryText project.yml
           unzip -t /tmp/WearMemoryText_v1.0.5_Source.zip
 
       - name: Install XcodeGen
