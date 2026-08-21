@@ -1,0 +1,151 @@
+import SwiftUI
+import Speech
+import UniformTypeIdentifiers
+import AVFoundation
+
+struct ContentView: View {
+    @EnvironmentObject var model: AppModel
+
+    @State private var showShare = false
+    @State private var captureMode: MediaCaptureMode?
+    @State private var pendingMedia: PendingMedia?
+    @State private var mediaError: String?
+    @State private var showAudioLesenPicker = false
+    @State private var showAudioHoerenPicker = false
+    @State private var storageError: String?
+    @State private var storageErrorTitle = "Папка"
+    @State private var selectedTab = 0
+
+    var body: some View {
+        TabView(selection: $selectedTab) {
+            homeView
+                .tabItem {
+                    Image(systemName: "house.fill")
+                    Text("Главная")
+                }
+                .tag(0)
+
+            filesView
+                .tabItem {
+                    Image(systemName: "folder.fill")
+                    Text("Файлы")
+                }
+                .tag(1)
+
+            recognitionView
+                .tabItem {
+                    Image(systemName: "waveform.and.mic")
+                    Text("Распознавание")
+                }
+                .tag(2)
+
+            settingsView
+                .tabItem {
+                    Image(systemName: "gearshape.fill")
+                    Text("Настройки")
+                }
+                .tag(3)
+        }
+        .accentColor(.blue)
+        .preferredColorScheme(.dark)
+        .onAppear { model.requestPermissions() }
+        .fileImporter(
+            isPresented: $showAudioLesenPicker,
+            allowedContentTypes: [.folder],
+            allowsMultipleSelection: false
+        ) { result in
+            do {
+                let urls = try result.get()
+                guard let url = urls.first else { return }
+                try model.selectAudioLesenFolder(url)
+            } catch {
+                storageErrorTitle = "Папка Audio Lesen"
+                storageError = error.localizedDescription
+            }
+        }
+        .fileImporter(
+            isPresented: $showAudioHoerenPicker,
+            allowedContentTypes: [.folder],
+            allowsMultipleSelection: false
+        ) { result in
+            do {
+                let urls = try result.get()
+                guard let url = urls.first else { return }
+                try model.selectAudioHoerenFolder(url)
+            } catch {
+                storageErrorTitle = "Папка Audio Hören"
+                storageError = error.localizedDescription
+            }
+        }
+        .sheet(isPresented: $showShare) {
+            ShareSheet(items: [model.logs.todayTextURL()])
+        }
+        .sheet(item: $captureMode) { mode in
+            CameraPicker(
+                mode: mode,
+                onCaptured: { captured in
+                    captureMode = nil
+                    pendingMedia = captured
+                },
+                onCancel: {
+                    captureMode = nil
+                    model.endMediaCaptureWithoutSave()
+                }
+            )
+        }
+        .sheet(
+            isPresented: Binding(
+                get: { pendingMedia != nil },
+                set: { if !$0 { pendingMedia = nil } }
+            )
+        ) {
+            if let pending = pendingMedia {
+                MediaConfirmationView(
+                    media: pending,
+                    onSave: {
+                        do {
+                            _ = try model.savePendingMedia(pending)
+                            pendingMedia = nil
+                        } catch {
+                            mediaError = error.localizedDescription
+                        }
+                    },
+                    onDiscard: {
+                        model.discardPendingMedia(pending)
+                        pendingMedia = nil
+                    }
+                )
+            }
+        }
+        .alert(
+            "Ошибка сохранения",
+            isPresented: Binding(
+                get: { mediaError != nil },
+                set: { if !$0 { mediaError = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) { mediaError = nil }
+        } message: {
+            Text(mediaError ?? "")
+        }
+        .alert(
+            storageErrorTitle,
+            isPresented: Binding(
+                get: { storageError != nil },
+                set: { if !$0 { storageError = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) { storageError = nil }
+        } message: {
+            Text(storageError ?? "")
+        }
+    }
+
+    private var homeView: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    Text("WearMemory")
+                        .font(.system(size: 38, weight: .bold, design: .rounde

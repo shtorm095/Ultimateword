@@ -1,0 +1,1 @@
+Run WearMemory v1.4 OAuth build after workflow push trigger enabled.

@@ -1,0 +1,137 @@
+ Divider().background(Color.white.opacity(0.08))
+
+                Button {
+                    selectedTab = 2
+                } label: {
+                    settingRow(icon: "globe", title: "Язык", subtitle: model.language.title, tint: .blue)
+                }
+                .buttonStyle(.plain)
+
+                Divider().background(Color.white.opacity(0.08))
+
+                HStack(spacing: 9) {
+                    Image(systemName: "brain.head.profile")
+                        .font(.title2)
+                        .foregroundColor(.blue)
+                        .frame(width: 30)
+                    Text("Только локальное\nраспознавание")
+                        .font(.subheadline)
+                        .foregroundColor(.white)
+                    Spacer(minLength: 4)
+                    Toggle("", isOn: $model.onDeviceOnly)
+                        .labelsHidden()
+                        .scaleEffect(0.86)
+                }
+                .padding(.vertical, 10)
+                .padding(.horizontal, 8)
+            }
+        }
+        .padding(12)
+        .cardStyle()
+    }
+
+    private var storageCard: some View {
+        VStack(spacing: 0) {
+            storageRow(
+                icon: "doc.text.fill",
+                iconColor: .purple,
+                label: "TXT → Audio Lesen",
+                status: model.externalTextFolder.isConfigured ? "Выбрана папка" : "Не выбрана",
+                path: "…/ChatGpt/Audio/Audio Lesen",
+                buttonTitle: model.externalTextFolder.isConfigured ? "Изменить\nAudio Lesen" : "Выбрать\nAudio Lesen"
+            ) {
+                showAudioLesenPicker = true
+            }
+
+            Divider().background(Color.white.opacity(0.08))
+
+            storageRow(
+                icon: "music.note",
+                iconColor: .green,
+                label: "Аудио → Audio Hören",
+                status: model.externalAudioFolder.isConfigured ? "Выбрана папка" : "Не выбрана",
+                path: "…/ChatGpt/Audio/Audio Hören",
+                buttonTitle: model.externalAudioFolder.isConfigured ? "Изменить\nAudio Hören" : "Выбрать\nAudio Hören"
+            ) {
+                showAudioHoerenPicker = true
+            }
+        }
+        .cardStyle()
+    }
+
+    private var mediaCard: some View {
+        HStack(spacing: 0) {
+            mediaTile(icon: "camera.fill", title: "Камера", tint: .cyan) {
+                model.beginMediaCapture()
+                captureMode = .photo
+            }
+
+            mediaTile(icon: "photo.fill.on.rectangle.fill", title: "Фото", tint: .blue) {
+                model.beginMediaCapture()
+                captureMode = .photo
+            }
+
+            mediaTile(icon: "video.fill", title: "Видео", tint: .purple) {
+                model.beginMediaCapture()
+                captureMode = .video
+            }
+
+            mediaTile(icon: "folder.fill", title: "Файлы", tint: .green) {
+                selectedTab = 1
+            }
+        }
+        .padding(.vertical, 14)
+        .cardStyle()
+    }
+
+    private var chatGPTCard: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "message.fill")
+                .font(.system(size: 34))
+                .foregroundColor(.green)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Последние 24 часа")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                Text("Копировать текст и открыть ChatGPT")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            Spacer()
+
+            Button("Открыть чат") {
+                model.copyLast24HoursAndOpenChatGPT()
+            }
+            .font(.subheadline.weight(.semibold))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+            .foregroundColor(.white)
+            .background(Color.blue)
+            .cornerRadius(10)
+        }
+        .padding(14)
+        .cardStyle()
+    }
+
+    private var recentAudioCard: some View {
+        VStack(spacing: 0) {
+            if recentAudioFiles.isEmpty {
+                HStack {
+                    Image(systemName: "waveform")
+                        .foregroundColor(.blue)
+                    Text("Пока нет завершённых аудиофрагментов")
+                        .foregroundColor(.secondary)
+                    Spacer()
+                }
+                .padding(14)
+            } else {
+                ForEach(Array(recentAudioFiles.prefix(6).enumerated()), id: \.element.id) { index, item in
+                    if index > 0 {
+                        Divider().background(Color.white.opacity(0.08))
+                    }
+                    HStack(spacing: 10) {
+                        Image(systemName: "doc.badge.waveform.fill")
+                            .font(.title2)
+                            .foregroundColor(.cyan)
