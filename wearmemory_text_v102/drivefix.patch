@@ -1,0 +1,144 @@
+--- a/WearMemoryText/TextDriveSync.swift
++++ b/WearMemoryText/TextDriveSync.swift
+@@ -4,8 +4,9 @@
+ import UIKit
+ 
+ /// Text-only Google Drive uploader.
+-/// It uses the existing OAuth refresh token stored by WearMemory Audio, but keeps
+-/// its own durable TXT upload queue and its own background URLSession.
++/// It reuses the Google Drive authorization already granted in WearMemory Audio
++/// through TrollStore's shared keychain access entitlement, while keeping a fully
++/// independent durable TXT upload queue and background URLSession.
+ final class TextDriveSync: NSObject, ObservableObject, URLSessionDataDelegate {
+     static let clientID = "923188036776-mos9ub27f4k3bhnodr8r4n46flsisptj.apps.googleusercontent.com"
+     static let textFolderID = "12ACQobm9LRdmmgPixarKN_trU55GiwXs"
+@@ -93,16 +94,21 @@
+     func refreshAuthorization() {
+         workQueue.async { [weak self] in
+             guard let self = self else { return }
+-            guard SharedGoogleKeychain.read(key: self.refreshTokenKey) != nil else {
++            let tokenLookup = SharedGoogleKeychain.readAudioRefreshToken(key: self.refreshTokenKey)
++            guard let refresh = tokenLookup.value, !refresh.isEmpty else {
+                 DispatchQueue.main.async {
+                     self.isAuthorized = false
+                     self.folderAuthorized = false
+-                    self.lastError = "Общий Google Drive токен не найден. Сначала подключите Google Drive в WearMemory Audio."
++                    self.lastError = "Google Drive токен WearMemory Audio не найден. Keychain: \(tokenLookup.diagnostic)"
+                     self.updatePublishedStatus()
+                 }
+                 return
+             }
+-            DispatchQueue.main.async { self.isAuthorized = true }
++            DispatchQueue.main.async {
++                self.isAuthorized = true
++                self.lastError = nil
++                self.updatePublishedStatus()
++            }
+             self.verifyTextFolder { verified in
+                 if verified && self.syncEnabled { self.flushQueue() }
+             }
+@@ -259,8 +265,9 @@
+         if let token = accessToken, let expiry = accessTokenExpiry, expiry > Date() {
+             completion(.success(token)); return
+         }
+-        guard let refresh = SharedGoogleKeychain.read(key: refreshTokenKey) else {
+-            completion(.failure(driveError("Google Drive не подключён"))); return
++        let lookup = SharedGoogleKeychain.readAudioRefreshToken(key: refreshTokenKey)
++        guard let refresh = lookup.value, !refresh.isEmpty else {
++            completion(.failure(driveError("Google Drive токен не найден. Keychain: \(lookup.diagnostic)"))); return
+         }
+         var request = URLRequest(url: URL(string: "https://oauth2.googleapis.com/token")!)
+         request.httpMethod = "POST"
+@@ -391,7 +398,7 @@
+     }
+ 
+     private func updatePublishedStatus() {
+-        if !isAuthorized { statusText = "Нет общего доступа Google Drive" }
++        if !isAuthorized { statusText = "Нет доступа к Google Drive" }
+         else if !folderAuthorized { statusText = "Нет доступа к Audio Lesen" }
+         else if !syncEnabled { statusText = "Подключено · синхронизация выключена" }
+         else { statusText = pendingCount > 0 ? "Синхронизация · очередь \(pendingCount)" : "Подключено" }
+@@ -420,17 +427,40 @@
+ }
+ 
+ private enum SharedGoogleKeychain {
+-    static func read(key: String) -> String? {
+-        let query: [String: Any] = [
+-            kSecClass as String: kSecClassGenericPassword,
+-            kSecAttrService as String: "local.pavel.WearMemory.GoogleDrive",
+-            kSecAttrAccount as String: key,
+-            kSecReturnData as String: true,
+-            kSecMatchLimit as String: kSecMatchLimitOne
++    struct Lookup {
++        let value: String?
++        let diagnostic: String
++    }
++
++    static func readAudioRefreshToken(key: String) -> Lookup {
++        let candidates: [String?] = [
++            "TROLLTROLL.local.pavel.WearMemory",
++            "TROLLTROLL.*",
++            "group.local.pavel.WearMemory",
++            nil
+         ]
+-        var result: CFTypeRef?
+-        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
+-              let data = result as? Data else { return nil }
+-        return String(data: data, encoding: .utf8)
++        var diagnostics: [String] = []
++        for group in candidates {
++            var query: [String: Any] = [
++                kSecClass as String: kSecClassGenericPassword,
++                kSecAttrService as String: "local.pavel.WearMemory.GoogleDrive",
++                kSecAttrAccount as String: key,
++                kSecReturnData as String: true,
++                kSecMatchLimit as String: kSecMatchLimitOne
++            ]
++            if let group = group {
++                query[kSecAttrAccessGroup as String] = group
++            }
++            var result: CFTypeRef?
++            let status = SecItemCopyMatching(query as CFDictionary, &result)
++            diagnostics.append("\(group ?? "all")=\(status)")
++            if status == errSecSuccess,
++               let data = result as? Data,
++               let value = String(data: data, encoding: .utf8),
++               !value.isEmpty {
++                return Lookup(value: value, diagnostic: diagnostics.joined(separator: ", "))
++            }
++        }
++        return Lookup(value: nil, diagnostic: diagnostics.joined(separator: ", "))
+     }
+ }
+--- a/WearMemoryText/WearMemoryText.entitlements
++++ b/WearMemoryText/WearMemoryText.entitlements
+@@ -2,12 +2,22 @@
+ <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+ <plist version="1.0">
+ <dict>
+-    <key>application-identifier</key><string>TROLLTROLL.*</string>
+-    <key>com.apple.developer.team-identifier</key><string>TROLLTROLL</string>
+-    <key>get-task-allow</key><true/>
+-    <key>keychain-access-groups</key>
+-    <array><string>TROLLTROLL.*</string><string>com.apple.token</string></array>
+-    <key>com.apple.security.application-groups</key>
+-    <array><string>group.local.pavel.WearMemory</string></array>
++	<key>application-identifier</key>
++	<string>TROLLTROLL.*</string>
++	<key>com.apple.developer.team-identifier</key>
++	<string>TROLLTROLL</string>
++	<key>get-task-allow</key>
++	<true/>
++	<key>keychain-access-groups</key>
++	<array>
++		<string>TROLLTROLL.*</string>
++		<string>TROLLTROLL.local.pavel.WearMemory</string>
++		<string>group.local.pavel.WearMemory</string>
++		<string>com.apple.token</string>
++	</array>
++	<key>com.apple.security.application-groups</key>
++	<array>
++		<string>group.local.pavel.WearMemory</string>
++	</array>
+ </dict>
+ </plist>
