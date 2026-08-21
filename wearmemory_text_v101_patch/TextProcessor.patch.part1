@@ -1,0 +1,168 @@
++    private func finishPieceFailure(item: TextQueueItem, sourceURL: URL, pieces: [URL], index: Int, texts: [String], warnings: [String], partial: String) {
++        var queue = loadQueue()
++        let attempts = (queue.first(where: { $0.id == item.id })?.attempts ?? 0) + 1
++
++        // First two failures of a piece stay durable and are retried later.
++        if attempts <= 2 {
++            finishFailure(itemID: item.id, message: warnings.last ?? "Speech error")
++            return
++        }
++
++        // A repeatedly failing piece must not block the rest of the recording forever.
++        // Keep any partial text, record an explicit warning, then continue with the next piece.
++        let salvaged = partial.trimmingCharacters(in: .whitespacesAndNewlines)
++        let newTexts = texts + [salvaged]
++        persistProgress(itemID: item.id, nextPieceIndex: index + 1, completedTexts: newTexts, warnings: warnings)
++        if let qIndex = queue.firstIndex(where: { $0.id == item.id }) {
++            queue[qIndex].attempts = 0
++            queue[qIndex].state = .processing
++            queue[qIndex].nextRetryAt = nil
++            queue[qIndex].currentPartialText = nil
++            queue[qIndex].warnings = warnings
++            queue[qIndex].nextPieceIndex = index + 1
++            queue[qIndex].completedPieceTexts = newTexts
++            saveQueue(queue)
++        }
++        publishStatus("Часть \(index + 1) пропущена после 3 сбоев · продолжаю")
++        recognizePieces(item: item, sourceURL: sourceURL, pieces: pieces, index: index + 1, texts: newTexts, warnings: warnings, forceOnDevice: false)
++    }
++
++    private func finishSuccess(item: TextQueueItem, sourceURL: URL, text: String, warnings: [String]) {
+         do {
+             let metadata = try metadataForAudio(sourceURL)
+             let result = TranscriptResult(
+@@ -224,24 +300,31 @@
+                 endedAt: metadata.endedAt,
+                 processedAt: Date(),
+                 language: language.rawValue,
+-                text: text
++                text: text,
++                warnings: warnings.isEmpty ? nil : warnings
+             )
+             try encoder.encode(result).write(to: resultURL(for: item.id), options: .atomic)
+             let journal = try rebuildDailyJournal(for: metadata.startedAt)
+ 
+             var queue = loadQueue(); queue.removeAll { $0.id == item.id }; saveQueue(queue)
++            processingLocked = false
+             setProcessing(false)
+             DispatchQueue.main.async {
+                 self.lastResult = result
+-                self.lastError = nil
+-                self.statusText = text.isEmpty ? "Готово · речь не найдена" : "Готово"
++                self.lastError = warnings.isEmpty ? nil : warnings.joined(separator: "\n")
++                self.lastPartialText = nil
++                if warnings.isEmpty {
++                    self.statusText = text.isEmpty ? "Готово · речь не найдена" : "Готово"
++                } else {
++                    self.statusText = "Готово с предупреждением"
++                }
+                 self.onStateChanged?()
+                 self.onJournalUpdated?(journal)
+             }
+             try? fm.removeItem(at: speechTempDirectory)
+             processNextLocked()
+         } catch {
+-            finishFailure(itemID: item.id, message: "Сохранение текста: \(error.localizedDescription)")
++            finishFailure(itemID: item.id, message: "Сохранение текста: \(describe(error))")
+         }
+     }
+ 
+@@ -251,14 +334,17 @@
+             queue[index].attempts += 1
+             queue[index].state = .retry
+             queue[index].lastError = message
++            queue[index].lastUnderlyingError = message
+             let delay = min(300.0, pow(2.0, Double(min(queue[index].attempts, 6))) * 5.0)
+             queue[index].nextRetryAt = Date().addingTimeInterval(delay)
+         }
+         saveQueue(queue)
++        processingLocked = false
+         setProcessing(false)
+         publishError(message)
+         try? fm.removeItem(at: speechTempDirectory)
+-        scheduleNextRetry(queue)
++        // Do not let one bad file block other queued recordings.
++        processNextLocked()
+     }
+ 
+     private func scheduleNextRetry(_ queue: [TextQueueItem]) {
+@@ -272,6 +358,64 @@
+         publishStatus("Повтор через \(Int(delay.rounded())) с")
+     }
+ 
++    private func queueItem(id: String) -> TextQueueItem? {
++        loadQueue().first { $0.id == id }
++    }
++
++    private func persistProgress(itemID: String, nextPieceIndex: Int, completedTexts: [String], warnings: [String]) {
++        var queue = loadQueue()
++        if let index = queue.firstIndex(where: { $0.id == itemID }) {
++            queue[index].nextPieceIndex = nextPieceIndex
++            queue[index].completedPieceTexts = completedTexts
++            queue[index].currentPartialText = nil
++            queue[index].warnings = warnings
++            queue[index].attempts = 0
++            queue[index].lastError = nil
++            queue[index].nextRetryAt = nil
++            queue[index].state = .processing
++            saveQueue(queue)
++        }
++    }
++
++    private func persistPartial(itemID: String, text: String) {
++        workQueue.async { [weak self] in
++            guard let self = self else { return }
++            var queue = self.loadQueue()
++            if let index = queue.firstIndex(where: { $0.id == itemID }) {
++                queue[index].currentPartialText = text
++                self.saveQueue(queue)
++            }
++        }
++    }
++
++    private func persistDiagnostic(itemID: String, details: String, partial: String) {
++        var queue = loadQueue()
++        if let index = queue.firstIndex(where: { $0.id == itemID }) {
++            queue[index].lastUnderlyingError = details
++            if !partial.isEmpty { queue[index].currentPartialText = partial }
++            saveQueue(queue)
++        }
++    }
++
++    private func describe(_ error: Error) -> String {
++        let ns = error as NSError
++        var parts = ["\(ns.domain) \(ns.code): \(ns.localizedDescription)"]
++        if let reason = ns.localizedFailureReason, !reason.isEmpty { parts.append("reason=\(reason)") }
++        if let suggestion = ns.localizedRecoverySuggestion, !suggestion.isEmpty { parts.append("recovery=\(suggestion)") }
++        if let underlying = ns.userInfo[NSUnderlyingErrorKey] as? NSError {
++            parts.append("underlying=\(underlying.domain) \(underlying.code): \(underlying.localizedDescription)")
++        }
++        let safeExtras = ns.userInfo.compactMap { key, value -> String? in
++            let k = String(describing: key)
++            guard k != NSUnderlyingErrorKey, k != NSLocalizedDescriptionKey, k != NSLocalizedFailureReasonErrorKey, k != NSLocalizedRecoverySuggestionErrorKey else { return nil }
++            let v = String(describing: value)
++            guard v.count <= 240 else { return "\(k)=\(v.prefix(240))…" }
++            return "\(k)=\(v)"
++        }.sorted()
++        if !safeExtras.isEmpty { parts.append("userInfo={\(safeExtras.joined(separator: ", "))}") }
++        return parts.joined(separator: " | ")
++    }
++
+     private func metadataForAudio(_ url: URL) throws -> AudioBridgeMetadata {
+         let sidecar = url.deletingPathExtension().appendingPathExtension("meta.json")
+         if fm.fileExists(atPath: sidecar.path) {
+@@ -292,7 +436,13 @@
+         }
+         results.sort { $0.startedAt < $1.startedAt }
+         let timeFormatter = DateFormatter(); timeFormatter.locale = Locale(identifier: "en_US_POSIX"); timeFormatter.dateFormat = "HH:mm:ss"
+-        let content = results.map { "[\(timeFormatter.string(from: $0.startedAt))] \($0.text)" }.joined(separator: "\n") + (results.isEmpty ? "" : "\n")
++        let content = results.map { result -> String in
++            var line = "[\(timeFormatter.string(from: result.startedAt))] \(result.text)"
++            if let warnings = result.warnings, !warnings.isEmpty {
++                line += "\n[Speech warning] " + warnings.joined(separator: " | ")
++            }
++            return line
++        }.joined(separator: "\n") + (results.isEmpty ? "" : "\n")
+         let url = journalsDirectory.appendingPathComponent("\(day).txt")
+         try content.data(using: .utf8)?.write(to: url, options: .atomic)
+         return url
