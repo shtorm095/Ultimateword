@@ -1,0 +1,116 @@
+name: Build WearMemory Text v1.0.0 IPA
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Reconstruct source
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/wmtext-src
+          mkdir -p /tmp/wmtext-src
+          cat wearmemory_text_v100/source.part00 \
+              wearmemory_text_v100/source.part01 \
+              wearmemory_text_v100/source.part02 \
+              wearmemory_text_v100/source.part03 \
+              wearmemory_text_v100/source.part04 \
+            | base64 --decode > /tmp/WearMemoryText_v1.0.0_Source.zip
+          echo "567ccfa05772a467fa8ad1fed3eac83f07aa0442c32fe10923da46a34413d56e  /tmp/WearMemoryText_v1.0.0_Source.zip" | shasum -a 256 -c -
+          ditto -x -k /tmp/WearMemoryText_v1.0.0_Source.zip /tmp/wmtext-src
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate project
+        working-directory: /tmp/wmtext-src
+        run: xcodegen generate
+
+      - name: Build arm64 iOS 15 app
+        working-directory: /tmp/wmtext-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project WearMemoryText.xcodeproj \
+            -scheme WearMemoryText \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath /tmp/wmtext-derived \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            ARCHS=arm64 \
+            ONLY_ACTIVE_ARCH=YES \
+            IPHONEOS_DEPLOYMENT_TARGET=15.0 \
+            clean build | tee /tmp/wmtext-build.log
+
+      - name: Package and ad-hoc sign for TrollStore
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP="/tmp/wmtext-derived/Build/Products/Release-iphoneos/WearMemoryText.app"
+          test -d "$APP"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$APP/Info.plist" | grep -Fx 'WearMemory Text'
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist" | grep -Fx 'local.pavel.WearMemoryText'
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Info.plist" | grep -Fx '1.0.0'
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Info.plist" | grep -Fx '1'
+          /usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$APP/Info.plist" | grep -Fx '15.0'
+          lipo -archs "$APP/WearMemoryText" | grep -w arm64
+
+          codesign --force --sign - --entitlements /tmp/wmtext-src/WearMemoryText/WearMemoryText.entitlements "$APP"
+          codesign --verify --deep --strict "$APP"
+          codesign -d --entitlements :- "$APP" > /tmp/wmtext-entitlements.plist 2>&1
+          grep -q 'group.local.pavel.WearMemory' /tmp/wmtext-entitlements.plist
+          grep -q 'TROLLTROLL.\*' /tmp/wmtext-entitlements.plist
+
+          rm -rf /tmp/wmtext-payload
+          mkdir -p /tmp/wmtext-payload/Payload
+          ditto "$APP" /tmp/wmtext-payload/Payload/WearMemoryText.app
+          cd /tmp/wmtext-payload
+          zip -qry /tmp/WearMemoryText_v1.0.0b1_iOS15.ipa Payload
+          unzip -t /tmp/WearMemoryText_v1.0.0b1_iOS15.ipa
+          shasum -a 256 /tmp/WearMemoryText_v1.0.0b1_iOS15.ipa > /tmp/WearMemoryText_v1.0.0b1_iOS15.ipa.sha256
+
+      - name: Verify clean Text scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC=/tmp/wmtext-src/WearMemoryText
+          grep -q 'AudioInbox' "$SRC/SharedTextPaths.swift"
+          grep -q 'Audio Lesen' "$SRC/TextDriveSync.swift"
+          grep -q 'wearmemory-text' "$SRC/Info.plist"
+          grep -q 'SFSpeechURLRecognitionRequest' "$SRC/TextProcessor.swift"
+          grep -q '55.0' "$SRC/TextProcessor.swift"
+          ! grep -R -q 'AVAudioRecorder' "$SRC"
+          ! grep -R -q 'Audio Hören' "$SRC"
+          ! grep -R -q 'CameraPicker' "$SRC"
+
+      - name: Prepare artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/wmtext-artifact
+          cp /tmp/WearMemoryText_v1.0.0b1_iOS15.ipa /tmp/wmtext-artifact/
+          cp /tmp/WearMemoryText_v1.0.0b1_iOS15.ipa.sha256 /tmp/wmtext-artifact/
+          cp /tmp/WearMemoryText_v1.0.0_Source.zip /tmp/wmtext-artifact/
+          cp /tmp/wmtext-entitlements.plist /tmp/wmtext-artifact/
+          cp /tmp/wmtext-build.log /tmp/wmtext-artifact/
+
+      - name: Upload verified IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: WearMemoryText-v1.0.0-Ready
+          path: /tmp/wmtext-artifact/*
+          retention-days: 7
