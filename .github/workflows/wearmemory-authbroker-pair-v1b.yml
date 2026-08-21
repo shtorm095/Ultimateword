@@ -1,0 +1,152 @@
+name: Build WearMemory AuthBroker Pair v1b
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare WearMemory Audio 1.7.2 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/wma172-src /tmp/wmt103-src
+          mkdir -p /tmp/wma172-src /tmp/wmt103-src
+          curl -fsSL --retry 3 \
+            'https://raw.githubusercontent.com/shtorm095/Ultimateword/wearmemory-audio-v1.7.1-result/artifacts/WearMemoryAudio_v1.7.1_Source.zip' \
+            -o /tmp/WearMemoryAudio_v1.7.1_Source.zip
+          echo 'cfb42094c47fef48e2d9ee51b250e94b60ed023a8f030ce3c905659c2cb8f9d4  /tmp/WearMemoryAudio_v1.7.1_Source.zip' | shasum -a 256 -c -
+          unzip -t /tmp/WearMemoryAudio_v1.7.1_Source.zip
+          ditto -x -k /tmp/WearMemoryAudio_v1.7.1_Source.zip /tmp/wma172-src
+          cd /tmp/wma172-src
+          patch -p1 < "$GITHUB_WORKSPACE/wearmemory_authbroker_v1/audio-v172-authbroker.patch"
+          echo '6d6f78369e64a99478b6769bcc23c47a505ecf54a83ddd1c09e713434463f0cf  WearMemory/GoogleDriveSync.swift' | shasum -a 256 -c -
+          echo 'd87d3c1a053f92bf05032098bdd061ff467f2724642d1b0f96958fd1a1f15e25  WearMemory/AudioBufferManager.swift' | shasum -a 256 -c -
+          grep -q 'requestTextDriveAuthorization' WearMemory/AudioIntegrationBridge.swift
+          grep -q 'text-google-drive.json' WearMemory/AudioIntegrationBridge.swift
+          grep -q 'model.handleOpenURL' WearMemory/WearMemoryApp.swift
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' WearMemory/Info.plist | grep -Fx '1.7.2'
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' WearMemory/Info.plist | grep -Fx '27'
+          zip -qry /tmp/WearMemoryAudio_v1.7.2_Source.zip WearMemory project.yml
+          unzip -t /tmp/WearMemoryAudio_v1.7.2_Source.zip
+
+      - name: Prepare WearMemory Text 1.0.3 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat wearmemory_text_v100/source.part00 \
+              wearmemory_text_v100/source.part01 \
+              wearmemory_text_v100/source.part02 \
+              wearmemory_text_v100/source.part03 \
+              wearmemory_text_v100/source.part04 \
+            | base64 --decode > /tmp/WearMemoryText_v1.0.0_Source.zip
+          unzip -t /tmp/WearMemoryText_v1.0.0_Source.zip
+          ditto -x -k /tmp/WearMemoryText_v1.0.0_Source.zip /tmp/wmt103-src
+          base64 -D -i wearmemory_text_v101/speech-fix.patch.gz.b64 -o /tmp/wmt101.patch.gz
+          gunzip -c /tmp/wmt101.patch.gz > /tmp/wmt101.patch
+          cd /tmp/wmt103-src
+          patch -p4 < /tmp/wmt101.patch
+          sed -i '' 's/^    let drive = TextDriveSync()/    var drive = TextDriveSync()/' WearMemoryText/TextAppModel.swift
+          patch -p1 < "$GITHUB_WORKSPACE/wearmemory_authbroker_v1/text-v103-drivebroker.patch"
+          /usr/libexec/PlistBuddy -c 'Set :CFBundleShortVersionString 1.0.3' WearMemoryText/Info.plist
+          /usr/libexec/PlistBuddy -c 'Set :CFBundleVersion 4' WearMemoryText/Info.plist
+          grep -q 'request.shouldReportPartialResults = true' WearMemoryText/TextProcessor.swift
+          grep -q 'NSUnderlyingErrorKey' WearMemoryText/TextProcessor.swift
+          grep -q 'wearmemory-audio://authorize-text-drive' WearMemoryText/TextDriveSync.swift
+          grep -q 'text-google-drive.json' WearMemoryText/TextDriveSync.swift
+          ! grep -q 'SharedGoogleKeychain' WearMemoryText/TextDriveSync.swift
+          ! grep -q 'import Security' WearMemoryText/TextDriveSync.swift
+          ! grep -q 'TROLLTROLL.local.pavel.WearMemory' WearMemoryText/WearMemoryText.entitlements
+          grep -q 'group.local.pavel.WearMemory' WearMemoryText/WearMemoryText.entitlements
+          ! grep -R -q 'AVAudioRecorder' WearMemoryText
+          ! grep -R -q 'Audio Hören' WearMemoryText
+          zip -qry /tmp/WearMemoryText_v1.0.3_Source.zip WearMemoryText project.yml
+          unzip -t /tmp/WearMemoryText_v1.0.3_Source.zip
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Build Audio arm64 iOS 15
+        working-directory: /tmp/wma172-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodegen generate
+          xcodebuild -project WearMemoryAudio.xcodeproj -scheme WearMemory -configuration Release -sdk iphoneos \
+            -derivedDataPath /tmp/wma172-derived CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' \
+            ARCHS=arm64 ONLY_ACTIVE_ARCH=YES IPHONEOS_DEPLOYMENT_TARGET=15.0 clean build | tee /tmp/wma172-build.log
+
+      - name: Build Text arm64 iOS 15
+        working-directory: /tmp/wmt103-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodegen generate
+          xcodebuild -project WearMemoryText.xcodeproj -scheme WearMemoryText -configuration Release -sdk iphoneos \
+            -derivedDataPath /tmp/wmt103-derived CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' \
+            ARCHS=arm64 ONLY_ACTIVE_ARCH=YES IPHONEOS_DEPLOYMENT_TARGET=15.0 clean build | tee /tmp/wmt103-build.log
+
+      - name: Sign and package both apps
+        shell: bash
+        run: |
+          set -euo pipefail
+          AUDIO_APP=/tmp/wma172-derived/Build/Products/Release-iphoneos/WearMemory.app
+          TEXT_APP=/tmp/wmt103-derived/Build/Products/Release-iphoneos/WearMemoryText.app
+          test -d "$AUDIO_APP"; test -d "$TEXT_APP"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$AUDIO_APP/Info.plist" | grep -Fx 'local.pavel.WearMemory'
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$AUDIO_APP/Info.plist" | grep -Fx '1.7.2'
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$AUDIO_APP/Info.plist" | grep -Fx '27'
+          /usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$AUDIO_APP/Info.plist" | grep -Fx '15.0'
+          lipo -archs "$AUDIO_APP/WearMemory" | grep -w arm64
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$TEXT_APP/Info.plist" | grep -Fx 'local.pavel.WearMemoryText'
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$TEXT_APP/Info.plist" | grep -Fx '1.0.3'
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$TEXT_APP/Info.plist" | grep -Fx '4'
+          /usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$TEXT_APP/Info.plist" | grep -Fx '15.0'
+          lipo -archs "$TEXT_APP/WearMemoryText" | grep -w arm64
+          codesign --force --sign - --entitlements /tmp/wma172-src/WearMemory/WearMemory.entitlements "$AUDIO_APP"
+          codesign --verify --deep --strict "$AUDIO_APP"
+          codesign -d --entitlements :- "$AUDIO_APP" > /tmp/wma172-entitlements.plist 2>&1
+          grep -q 'group.local.pavel.WearMemory' /tmp/wma172-entitlements.plist
+          grep -q 'TROLLTROLL.\*' /tmp/wma172-entitlements.plist
+          codesign --force --sign - --entitlements /tmp/wmt103-src/WearMemoryText/WearMemoryText.entitlements "$TEXT_APP"
+          codesign --verify --deep --strict "$TEXT_APP"
+          codesign -d --entitlements :- "$TEXT_APP" > /tmp/wmt103-entitlements.plist 2>&1
+          grep -q 'group.local.pavel.WearMemory' /tmp/wmt103-entitlements.plist
+          grep -q 'TROLLTROLL.\*' /tmp/wmt103-entitlements.plist
+          ! grep -q 'TROLLTROLL.local.pavel.WearMemory' /tmp/wmt103-entitlements.plist
+          rm -rf /tmp/audio-payload /tmp/text-payload
+          mkdir -p /tmp/audio-payload/Payload /tmp/text-payload/Payload
+          ditto "$AUDIO_APP" /tmp/audio-payload/Payload/WearMemory.app
+          ditto "$TEXT_APP" /tmp/text-payload/Payload/WearMemoryText.app
+          (cd /tmp/audio-payload && zip -qry /tmp/WearMemoryAudio_v1.7.2b27_iOS15.ipa Payload)
+          (cd /tmp/text-payload && zip -qry /tmp/WearMemoryText_v1.0.3b4_iOS15.ipa Payload)
+          unzip -t /tmp/WearMemoryAudio_v1.7.2b27_iOS15.ipa
+          unzip -t /tmp/WearMemoryText_v1.0.3b4_iOS15.ipa
+          shasum -a 256 /tmp/WearMemoryAudio_v1.7.2b27_iOS15.ipa > /tmp/WearMemoryAudio_v1.7.2b27_iOS15.ipa.sha256
+          shasum -a 256 /tmp/WearMemoryText_v1.0.3b4_iOS15.ipa > /tmp/WearMemoryText_v1.0.3b4_iOS15.ipa.sha256
+
+      - name: Upload pair
+        uses: actions/upload-artifact@v4
+        with:
+          name: WearMemory-AuthBroker-Pair-v1b
+          path: |
+            /tmp/WearMemoryAudio_v1.7.2b27_iOS15.ipa
+            /tmp/WearMemoryAudio_v1.7.2b27_iOS15.ipa.sha256
+            /tmp/WearMemoryAudio_v1.7.2_Source.zip
+            /tmp/wma172-entitlements.plist
+            /tmp/wma172-build.log
+            /tmp/WearMemoryText_v1.0.3b4_iOS15.ipa
+            /tmp/WearMemoryText_v1.0.3b4_iOS15.ipa.sha256
+            /tmp/WearMemoryText_v1.0.3_Source.zip
+            /tmp/wmt103-entitlements.plist
+            /tmp/wmt103-build.log
+          retention-days: 7

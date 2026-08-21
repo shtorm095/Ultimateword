@@ -1,0 +1,154 @@
+diff -ruN a/WearMemoryText/ContentView.swift b/WearMemoryText/ContentView.swift
+--- a/WearMemoryText/ContentView.swift	2026-08-21 11:20:05.415058524 +0000
++++ b/WearMemoryText/ContentView.swift	2026-08-21 11:20:05.418167267 +0000
+@@ -131,7 +131,12 @@
+             }.padding(14)
+             Divider().background(Color.white.opacity(0.08))
+             HStack {
+-                Button("Проверить доступ") { model.drive.refreshAuthorization() }.buttonStyle(.bordered)
++                if model.drive.isAuthorized {
++                    Button("Проверить доступ") { model.drive.refreshAuthorization() }.buttonStyle(.bordered)
++                    Button("Отключить", role: .destructive) { model.drive.disconnect() }.buttonStyle(.bordered)
++                } else {
++                    Button("Подключить Google Drive") { model.drive.requestAuthorization() }.buttonStyle(.borderedProminent)
++                }
+                 Spacer()
+             }.padding(14)
+             if let error = model.drive.lastError {
+diff -ruN a/WearMemoryText/TextDriveSync.swift b/WearMemoryText/TextDriveSync.swift
+--- a/WearMemoryText/TextDriveSync.swift	2026-08-21 11:20:05.414996372 +0000
++++ b/WearMemoryText/TextDriveSync.swift	2026-08-21 11:20:05.417995332 +0000
+@@ -1,11 +1,11 @@
+ import Foundation
+-import Security
+ import Network
+ import UIKit
+ 
+ /// Text-only Google Drive uploader.
+-/// It uses the existing OAuth refresh token stored by WearMemory Audio, but keeps
+-/// its own durable TXT upload queue and its own background URLSession.
++/// Google authorization for Audio Lesen is brokered by WearMemory Audio because Audio owns
++/// the Google callback URL scheme. The Text refresh token is stored in the shared App Group,
++/// while TXT queueing/uploading remains fully independent inside WearMemory Text.
+ final class TextDriveSync: NSObject, ObservableObject, URLSessionDataDelegate {
+     static let clientID = "923188036776-mos9ub27f4k3bhnodr8r4n46flsisptj.apps.googleusercontent.com"
+     static let textFolderID = "12ACQobm9LRdmmgPixarKN_trU55GiwXs"
+@@ -90,14 +90,41 @@
+ 
+     var textFolderDisplay: String { "ChatGpt/Audio/Audio Lesen" }
+ 
++
++    func requestAuthorization() {
++        DispatchQueue.main.async {
++            self.lastError = nil
++            self.statusText = "Открываю WearMemory Audio…"
++            guard let url = URL(string: "wearmemory-audio://authorize-text-drive") else {
++                self.setError("Не удалось создать URL авторизации")
++                return
++            }
++            UIApplication.shared.open(url, options: [:]) { success in
++                if !success { self.setError("WearMemory Audio не установлена или URL-мост недоступен") }
++            }
++        }
++    }
++
++    func disconnect() {
++        TextDriveCredentialStore.deleteCredential()
++        accessToken = nil
++        accessTokenExpiry = nil
++        DispatchQueue.main.async {
++            self.isAuthorized = false
++            self.folderAuthorized = false
++            self.lastError = nil
++            self.updatePublishedStatus()
++        }
++    }
++
+     func refreshAuthorization() {
+         workQueue.async { [weak self] in
+             guard let self = self else { return }
+-            guard SharedGoogleKeychain.read(key: self.refreshTokenKey) != nil else {
++            guard TextDriveCredentialStore.refreshToken(folderID: Self.textFolderID) != nil else {
+                 DispatchQueue.main.async {
+                     self.isAuthorized = false
+                     self.folderAuthorized = false
+-                    self.lastError = "Общий Google Drive токен не найден. Сначала подключите Google Drive в WearMemory Audio."
++                    self.lastError = TextDriveCredentialStore.lastBrokerError()
+                     self.updatePublishedStatus()
+                 }
+                 return
+@@ -259,8 +286,8 @@
+         if let token = accessToken, let expiry = accessTokenExpiry, expiry > Date() {
+             completion(.success(token)); return
+         }
+-        guard let refresh = SharedGoogleKeychain.read(key: refreshTokenKey) else {
+-            completion(.failure(driveError("Google Drive не подключён"))); return
++        guard let refresh = TextDriveCredentialStore.refreshToken(folderID: Self.textFolderID) else {
++            completion(.failure(driveError("Google Drive для Text не подключён"))); return
+         }
+         var request = URLRequest(url: URL(string: "https://oauth2.googleapis.com/token")!)
+         request.httpMethod = "POST"
+@@ -391,7 +418,7 @@
+     }
+ 
+     private func updatePublishedStatus() {
+-        if !isAuthorized { statusText = "Нет общего доступа Google Drive" }
++        if !isAuthorized { statusText = "Не подключено" }
+         else if !folderAuthorized { statusText = "Нет доступа к Audio Lesen" }
+         else if !syncEnabled { statusText = "Подключено · синхронизация выключена" }
+         else { statusText = pendingCount > 0 ? "Синхронизация · очередь \(pendingCount)" : "Подключено" }
+@@ -419,18 +446,41 @@
+     }
+ }
+ 
+-private enum SharedGoogleKeychain {
+-    static func read(key: String) -> String? {
+-        let query: [String: Any] = [
+-            kSecClass as String: kSecClassGenericPassword,
+-            kSecAttrService as String: "local.pavel.WearMemory.GoogleDrive",
+-            kSecAttrAccount as String: key,
+-            kSecReturnData as String: true,
+-            kSecMatchLimit as String: kSecMatchLimitOne
+-        ]
+-        var result: CFTypeRef?
+-        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
+-              let data = result as? Data else { return nil }
+-        return String(data: data, encoding: .utf8)
++private enum TextDriveCredentialStore {
++    private static let appGroup = "group.local.pavel.WearMemory"
++    private static let fileName = "text-google-drive.json"
++
++    private struct Credential: Codable {
++        let version: Int
++        let module: String
++        let folderID: String
++        let refreshToken: String
++        let updatedAt: Date
++    }
++
++    static func refreshToken(folderID: String) -> String? {
++        guard let root = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroup) else { return nil }
++        let url = root.appendingPathComponent("Auth", isDirectory: true).appendingPathComponent(fileName)
++        guard let data = try? Data(contentsOf: url) else { return nil }
++        let decoder = JSONDecoder(); decoder.dateDecodingStrategy = .iso8601
++        guard let credential = try? decoder.decode(Credential.self, from: data),
++              credential.module == "text", credential.folderID == folderID, !credential.refreshToken.isEmpty else { return nil }
++        return credential.refreshToken
++    }
++
++    static func lastBrokerError() -> String? {
++        guard let root = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroup) else {
++            return "Общая папка WearMemory недоступна"
++        }
++        let url = root.appendingPathComponent("Auth", isDirectory: true).appendingPathComponent("text-drive-error.txt")
++        if let data = try? Data(contentsOf: url), let text = String(data: data, encoding: .utf8), !text.isEmpty { return text }
++        return "Google Drive для Text не подключён"
++    }
++
++    static func deleteCredential() {
++        guard let root = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroup) else { return }
++        let dir = root.appendingPathComponent("Auth", isDirectory: true)
++        try? FileManager.default.removeItem(at: dir.appendingPathComponent(fileName))
++        try? FileManager.default.removeItem(at: dir.appendingPathComponent("text-drive-error.txt"))
+     }
+ }

@@ -1,0 +1,379 @@
+diff -ruN a/WearMemory/AppModel.swift b/WearMemory/AppModel.swift
+--- a/WearMemory/AppModel.swift	2026-08-21 11:18:44.411484682 +0000
++++ b/WearMemory/AppModel.swift	2026-08-21 11:18:44.412845602 +0000
+@@ -76,6 +76,16 @@
+         audio.requestMicPermission { _ in }
+     }
+ 
++    @discardableResult
++    func handleOpenURL(_ url: URL) -> Bool {
++        if url.scheme == "wearmemory-audio", url.host == "authorize-text-drive" {
++            integrationBridge.requestTextDriveAuthorization()
++            return true
++        }
++        if integrationBridge.handleGoogleCallback(url) { return true }
++        return driveSync.handleOpenURL(url)
++    }
++
+     private func publishIntegrationStatus() {
+         let info = Bundle.main.infoDictionary ?? [:]
+         integrationBridge.publishStatus(.init(
+diff -ruN a/WearMemory/AudioIntegrationBridge.swift b/WearMemory/AudioIntegrationBridge.swift
+--- a/WearMemory/AudioIntegrationBridge.swift	2026-08-21 11:18:44.411655075 +0000
++++ b/WearMemory/AudioIntegrationBridge.swift	2026-08-21 11:18:44.412913613 +0000
+@@ -1,11 +1,19 @@
+ import Foundation
++import CryptoKit
++import Security
++import UIKit
+ 
+-/// Passive integration bridge for future WearMemory modules.
+-/// It never moves/deletes the Audio original, never touches Drive state,
+-/// and performs all shared-container work on a separate serial queue.
++/// Passive integration bridge for WearMemory modules.
++/// Recording and the Audio Google Drive pipeline never depend on this bridge.
+ final class AudioIntegrationBridge {
+     static let appGroupIdentifier = "group.local.pavel.WearMemory"
+-    static let bridgeVersion = 1
++    static let bridgeVersion = 2
++
++    private static let googleClientID = "923188036776-mos9ub27f4k3bhnodr8r4n46flsisptj.apps.googleusercontent.com"
++    private static let googleCallbackScheme = "com.googleusercontent.apps.923188036776-mos9ub27f4k3bhnodr8r4n46flsisptj"
++    private static let googleRedirectURI = googleCallbackScheme + ":/oauth2redirect"
++    private static let googleScope = "https://www.googleapis.com/auth/drive.file"
++    private static let textFolderID = "12ACQobm9LRdmmgPixarKN_trU55GiwXs"
+ 
+     struct Status: Codable {
+         let bridgeVersion: Int
+@@ -30,6 +38,31 @@
+         let exportedAt: Date
+     }
+ 
++    private struct PendingTextOAuth: Codable {
++        let verifier: String
++        let state: String
++        let startedAt: Date
++    }
++
++    private struct GoogleTokenResponse: Decodable {
++        let accessToken: String?
++        let refreshToken: String?
++        let expiresIn: Int?
++        enum CodingKeys: String, CodingKey {
++            case accessToken = "access_token"
++            case refreshToken = "refresh_token"
++            case expiresIn = "expires_in"
++        }
++    }
++
++    private struct SharedTextCredential: Codable {
++        let version: Int
++        let module: String
++        let folderID: String
++        let refreshToken: String
++        let updatedAt: Date
++    }
++
+     private let fm = FileManager.default
+     private let queue = DispatchQueue(label: "WearMemory.Audio.IntegrationBridge", qos: .utility)
+     private let encoder: JSONEncoder = {
+@@ -38,6 +71,11 @@
+         e.dateEncodingStrategy = .iso8601
+         return e
+     }()
++    private let decoder: JSONDecoder = {
++        let d = JSONDecoder()
++        d.dateDecodingStrategy = .iso8601
++        return d
++    }()
+ 
+     func exportFinalizedAudio(_ sourceURL: URL, startedAt: Date, endedAt: Date) {
+         queue.async { [weak self] in
+@@ -59,18 +97,199 @@
+         }
+     }
+ 
+-    private func performExport(_ sourceURL: URL, startedAt: Date, endedAt: Date) {
+-        do {
+-            guard fm.fileExists(atPath: sourceURL.path) else {
+-                throw NSError(domain: "WearMemory.AudioIntegrationBridge", code: 2,
+-                              userInfo: [NSLocalizedDescriptionKey: "Finalized audio file not found"])
++    /// Starts an OAuth + Google Picker flow owned by Audio, exclusively for Text's Audio Lesen folder.
++    /// The resulting refresh token is stored in the App Group for WearMemory Text. Audio's own
++    /// GoogleDriveSync credentials and queue are never read, changed, or reused here.
++    func requestTextDriveAuthorization() {
++        queue.async { [weak self] in
++            guard let self = self else { return }
++            do {
++                let verifier = Self.randomBase64URL(byteCount: 64)
++                let challenge = Self.base64URL(Data(SHA256.hash(data: Data(verifier.utf8))))
++                let state = "text-" + Self.randomBase64URL(byteCount: 24)
++                try self.savePendingTextOAuth(.init(verifier: verifier, state: state, startedAt: Date()))
++
++                var components = URLComponents(string: "https://accounts.google.com/o/oauth2/v2/auth")!
++                components.queryItems = [
++                    URLQueryItem(name: "client_id", value: Self.googleClientID),
++                    URLQueryItem(name: "scope", value: Self.googleScope),
++                    URLQueryItem(name: "redirect_uri", value: Self.googleRedirectURI),
++                    URLQueryItem(name: "response_type", value: "code"),
++                    URLQueryItem(name: "access_type", value: "offline"),
++                    URLQueryItem(name: "prompt", value: "consent"),
++                    URLQueryItem(name: "trigger_onepick", value: "true"),
++                    URLQueryItem(name: "allow_multiple", value: "false"),
++                    URLQueryItem(name: "allow_folder_selection", value: "true"),
++                    URLQueryItem(name: "mimetypes", value: "application/vnd.google-apps.folder"),
++                    URLQueryItem(name: "file_ids", value: Self.textFolderID),
++                    URLQueryItem(name: "code_challenge", value: challenge),
++                    URLQueryItem(name: "code_challenge_method", value: "S256"),
++                    URLQueryItem(name: "state", value: state)
++                ]
++                guard let url = components.url else { throw bridgeError("Не удалось создать Google OAuth URL") }
++                DispatchQueue.main.async {
++                    UIApplication.shared.open(url, options: [:]) { success in
++                        if !success { self.failTextAuthorization("Не удалось открыть Google OAuth") }
++                    }
++                }
++            } catch {
++                self.failTextAuthorization(error.localizedDescription)
+             }
+-            let size = (try? sourceURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+-            guard size > 0 else {
+-                throw NSError(domain: "WearMemory.AudioIntegrationBridge", code: 3,
+-                              userInfo: [NSLocalizedDescriptionKey: "Finalized audio file is empty"])
++        }
++    }
++
++    /// Returns true only when this callback belongs to the pending Text authorization flow.
++    func handleGoogleCallback(_ url: URL) -> Bool {
++        guard url.scheme == Self.googleCallbackScheme else { return false }
++        guard let pending = loadPendingTextOAuth(), Date().timeIntervalSince(pending.startedAt) < 600 else {
++            clearPendingTextOAuth()
++            return false
++        }
++        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
++            failTextAuthorization("Не удалось разобрать ответ Google")
++            return true
++        }
++        let items = Dictionary(uniqueKeysWithValues: (components.queryItems ?? []).map { ($0.name, $0.value ?? "") })
++        if let returnedState = items["state"], !returnedState.isEmpty, returnedState != pending.state {
++            return false
++        }
++        if let error = items["error"], !error.isEmpty {
++            failTextAuthorization("Google OAuth: \(error)")
++            return true
++        }
++        guard let code = items["code"], !code.isEmpty else {
++            failTextAuthorization("Google не вернул authorization code")
++            return true
++        }
++        guard let rawPicked = items["picked_file_ids"], !rawPicked.isEmpty else {
++            failTextAuthorization("Google Picker не вернул Audio Lesen")
++            return true
++        }
++        let decoded = rawPicked.removingPercentEncoding ?? rawPicked
++        let picked = Set(decoded.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) })
++        guard picked.contains(Self.textFolderID) else {
++            failTextAuthorization("Нужно выбрать папку Audio Lesen")
++            return true
++        }
++        clearPendingTextOAuth()
++        exchangeTextAuthorizationCode(code, verifier: pending.verifier)
++        return true
++    }
++
++    private func exchangeTextAuthorizationCode(_ code: String, verifier: String) {
++        let fields = [
++            "code": code,
++            "client_id": Self.googleClientID,
++            "code_verifier": verifier,
++            "grant_type": "authorization_code",
++            "redirect_uri": Self.googleRedirectURI
++        ]
++        var request = URLRequest(url: URL(string: "https://oauth2.googleapis.com/token")!)
++        request.httpMethod = "POST"
++        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
++        request.httpBody = Self.formEncoded(fields).data(using: .utf8)
++        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
++            guard let self = self else { return }
++            if let error = error { self.failTextAuthorization("Google token: \(error.localizedDescription)"); return }
++            guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode), let data = data else {
++                self.failTextAuthorization("Google token: HTTP \((response as? HTTPURLResponse)?.statusCode ?? -1)")
++                return
++            }
++            do {
++                let token = try JSONDecoder().decode(GoogleTokenResponse.self, from: data)
++                guard let refresh = token.refreshToken, !refresh.isEmpty else {
++                    throw self.bridgeError("Google не вернул refresh_token")
++                }
++                guard let access = token.accessToken, !access.isEmpty else {
++                    throw self.bridgeError("Google не вернул access_token")
++                }
++                self.verifyTextFolder(accessToken: access, refreshToken: refresh)
++            } catch {
++                self.failTextAuthorization(error.localizedDescription)
+             }
++        }.resume()
++    }
+ 
++    private func verifyTextFolder(accessToken: String, refreshToken: String) {
++        var request = URLRequest(url: URL(string: "https://www.googleapis.com/drive/v3/files/\(Self.textFolderID)?fields=id,name,mimeType")!)
++        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
++        URLSession.shared.dataTask(with: request) { [weak self] _, response, error in
++            guard let self = self else { return }
++            let ok = error == nil && (response as? HTTPURLResponse).map { (200..<300).contains($0.statusCode) } == true
++            guard ok else {
++                self.failTextAuthorization("Google Drive не подтвердил доступ к Audio Lesen")
++                return
++            }
++            do {
++                try self.saveTextCredential(.init(version: 1, module: "text", folderID: Self.textFolderID, refreshToken: refreshToken, updatedAt: Date()))
++                self.clearTextAuthorizationError()
++                DispatchQueue.main.async {
++                    if let url = URL(string: "wearmemory-text://drive-ready") {
++                        UIApplication.shared.open(url, options: [:], completionHandler: nil)
++                    }
++                }
++            } catch {
++                self.failTextAuthorization(error.localizedDescription)
++            }
++        }.resume()
++    }
++
++    private func failTextAuthorization(_ message: String) {
++        clearPendingTextOAuth()
++        queue.async { [weak self] in
++            guard let self = self else { return }
++            do {
++                let dir = try self.authDirectory()
++                try self.fm.createDirectory(at: dir, withIntermediateDirectories: true)
++                try Data(message.utf8).write(to: dir.appendingPathComponent("text-drive-error.txt"), options: .atomic)
++            } catch { }
++            DispatchQueue.main.async {
++                if let encoded = message.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
++                   let url = URL(string: "wearmemory-text://drive-error?message=\(encoded)") {
++                    UIApplication.shared.open(url, options: [:], completionHandler: nil)
++                }
++            }
++        }
++    }
++
++    private func clearTextAuthorizationError() {
++        if let dir = try? authDirectory() {
++            try? fm.removeItem(at: dir.appendingPathComponent("text-drive-error.txt"))
++        }
++    }
++
++    private func savePendingTextOAuth(_ pending: PendingTextOAuth) throws {
++        let dir = try authDirectory()
++        try fm.createDirectory(at: dir, withIntermediateDirectories: true)
++        try encoder.encode(pending).write(to: dir.appendingPathComponent("text-oauth-pending.json"), options: .atomic)
++    }
++
++    private func loadPendingTextOAuth() -> PendingTextOAuth? {
++        guard let dir = try? authDirectory(),
++              let data = try? Data(contentsOf: dir.appendingPathComponent("text-oauth-pending.json")),
++              let pending = try? decoder.decode(PendingTextOAuth.self, from: data) else { return nil }
++        return pending
++    }
++
++    private func clearPendingTextOAuth() {
++        if let dir = try? authDirectory() { try? fm.removeItem(at: dir.appendingPathComponent("text-oauth-pending.json")) }
++    }
++
++    private func saveTextCredential(_ credential: SharedTextCredential) throws {
++        let dir = try authDirectory()
++        try fm.createDirectory(at: dir, withIntermediateDirectories: true)
++        try encoder.encode(credential).write(to: dir.appendingPathComponent("text-google-drive.json"), options: .atomic)
++    }
++
++    private func authDirectory() throws -> URL {
++        try sharedRoot().appendingPathComponent("Auth", isDirectory: true)
++    }
++
++    private func performExport(_ sourceURL: URL, startedAt: Date, endedAt: Date) {
++        do {
++            guard fm.fileExists(atPath: sourceURL.path) else { throw bridgeError("Finalized audio file not found") }
++            let size = (try? sourceURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
++            guard size > 0 else { throw bridgeError("Finalized audio file is empty") }
+             let root = try sharedRoot()
+             let inbox = root.appendingPathComponent("AudioInbox", isDirectory: true)
+             try fm.createDirectory(at: inbox, withIntermediateDirectories: true)
+@@ -80,14 +299,7 @@
+                 try fm.copyItem(at: sourceURL, to: temp)
+                 try fm.moveItem(at: temp, to: destination)
+             }
+-
+-            let metadata = AudioMetadata(
+-                bridgeVersion: Self.bridgeVersion,
+-                sourceFileName: sourceURL.lastPathComponent,
+-                startedAt: startedAt,
+-                endedAt: endedAt,
+-                exportedAt: Date()
+-            )
++            let metadata = AudioMetadata(bridgeVersion: Self.bridgeVersion, sourceFileName: sourceURL.lastPathComponent, startedAt: startedAt, endedAt: endedAt, exportedAt: Date())
+             let sidecar = inbox.appendingPathComponent(sourceURL.deletingPathExtension().lastPathComponent + ".meta.json")
+             try encoder.encode(metadata).write(to: sidecar, options: .atomic)
+         } catch {
+@@ -97,9 +309,33 @@
+ 
+     private func sharedRoot() throws -> URL {
+         guard let root = fm.containerURL(forSecurityApplicationGroupIdentifier: Self.appGroupIdentifier) else {
+-            throw NSError(domain: "WearMemory.AudioIntegrationBridge", code: 1,
+-                          userInfo: [NSLocalizedDescriptionKey: "App Group container unavailable"])
++            throw bridgeError("App Group container unavailable")
+         }
+         return root
+     }
++
++    private func bridgeError(_ text: String) -> Error {
++        NSError(domain: "WearMemory.AudioIntegrationBridge", code: 1, userInfo: [NSLocalizedDescriptionKey: text])
++    }
++
++    private static func randomBase64URL(byteCount: Int) -> String {
++        var bytes = [UInt8](repeating: 0, count: byteCount)
++        let status = bytes.withUnsafeMutableBytes { SecRandomCopyBytes(kSecRandomDefault, byteCount, $0.baseAddress!) }
++        if status != errSecSuccess { return UUID().uuidString.replacingOccurrences(of: "-", with: "") }
++        return base64URL(Data(bytes))
++    }
++
++    private static func base64URL(_ data: Data) -> String {
++        data.base64EncodedString().replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "=", with: "")
++    }
++
++    private static func formEncoded(_ fields: [String: String]) -> String {
++        fields.map { "\(urlEncode($0.key))=\(urlEncode($0.value))" }.sorted().joined(separator: "&")
++    }
++
++    private static func urlEncode(_ value: String) -> String {
++        var allowed = CharacterSet.alphanumerics
++        allowed.insert(charactersIn: "-._~")
++        return value.addingPercentEncoding(withAllowedCharacters: allowed) ?? value
++    }
+ }
+diff -ruN a/WearMemory/Info.plist b/WearMemory/Info.plist
+--- a/WearMemory/Info.plist	2026-08-21 11:18:44.411718800 +0000
++++ b/WearMemory/Info.plist	2026-08-21 11:18:44.413124405 +0000
+@@ -15,9 +15,9 @@
+ 	<key>CFBundlePackageType</key>
+ 	<string>APPL</string>
+ 	<key>CFBundleShortVersionString</key>
+-	<string>1.7.1</string>
++	<string>1.7.2</string>
+ 	<key>CFBundleVersion</key>
+-	<string>26</string>
++	<string>27</string>
+ 	<key>LSRequiresIPhoneOS</key>
+ 	<true/>
+ 	<key>MinimumOSVersion</key>
+diff -ruN a/WearMemory/WearMemoryApp.swift b/WearMemory/WearMemoryApp.swift
+--- a/WearMemory/WearMemoryApp.swift	2026-08-21 11:18:44.411728374 +0000
++++ b/WearMemory/WearMemoryApp.swift	2026-08-21 11:18:44.413133168 +0000
+@@ -11,7 +11,7 @@
+             ContentView()
+                 .environmentObject(model)
+                 .onOpenURL { url in
+-                    _ = model.driveSync.handleOpenURL(url)
++                    _ = model.handleOpenURL(url)
+                 }
+                 .onChange(of: scenePhase) { phase in
+                     if phase == .active {
