@@ -1,0 +1,104 @@
+--- a/WearMemoryText/TextProcessor.swift
++++ b/WearMemoryText/TextProcessor.swift
+@@ -19,6 +19,8 @@
+     private var currentTask: SFSpeechRecognitionTask?
+     private var currentRecognizer: SFSpeechRecognizer?
+     private var retryWorkItem: DispatchWorkItem?
++    private var processorBusy = false
++    private var recoveredInterruptedQueue = false
+ 
+     private let encoder: JSONEncoder = {
+         let e = JSONEncoder(); e.dateEncodingStrategy = .iso8601; e.outputFormatting = [.prettyPrinted, .sortedKeys]; return e
+@@ -44,7 +46,7 @@
+             guard let self = self else { return }
+             do {
+                 try self.ensureDirectories()
+-                var queue = self.loadQueue()
++                var queue = self.loadQueueRecoveringInterruptedIfNeeded()
+                 let results = Set(try self.resultFiles().map { $0.deletingPathExtension().lastPathComponent })
+                 let inbox = try SharedTextPaths(fileManager: self.fm).audioInbox
+                 let files = try self.fm.contentsOfDirectory(at: inbox, includingPropertiesForKeys: [.fileSizeKey], options: [.skipsHiddenFiles])
+@@ -81,7 +83,7 @@
+     func processAll() {
+         workQueue.async { [weak self] in
+             guard let self = self else { return }
+-            var queue = self.loadQueue()
++            var queue = self.loadQueueRaw()
+             for index in queue.indices where queue[index].state == .retry {
+                 queue[index].nextRetryAt = nil
+                 queue[index].state = .queued
+@@ -92,12 +94,12 @@
+     }
+ 
+     private func processNextLocked() {
+-        guard !isProcessing else { return }
++        guard !processorBusy else { return }
+         guard speechAuthorization == .authorized else {
+             publishStatus("Нужно разрешение Speech")
+             return
+         }
+-        var queue = loadQueue()
++        var queue = loadQueueRaw()
+         guard !queue.isEmpty else {
+             publishStatus("Очередь пуста")
+             return
+@@ -120,6 +122,7 @@
+             guard fm.fileExists(atPath: sourceURL.path) else {
+                 queue.remove(at: index); saveQueue(queue); processNextLocked(); return
+             }
++            processorBusy = true
+             queue[index].state = .processing
+             queue[index].lastError = nil
+             saveQueue(queue)
+@@ -406,7 +409,8 @@
+             try encoder.encode(result).write(to: resultURL(for: item.id), options: .atomic)
+             let journal = try rebuildDailyJournal(for: metadata.startedAt)
+ 
+-            var queue = loadQueue(); queue.removeAll { $0.id == item.id }; saveQueue(queue)
++            var queue = loadQueueRaw(); queue.removeAll { $0.id == item.id }; saveQueue(queue)
++            processorBusy = false
+             try? fm.removeItem(at: partialURL(for: item.id))
+             setProcessing(false)
+             DispatchQueue.main.async {
+@@ -424,7 +428,7 @@
+     }
+ 
+     private func finishFailure(itemID: String, message: String) {
+-        var queue = loadQueue()
++        var queue = loadQueueRaw()
+         if let index = queue.firstIndex(where: { $0.id == itemID }) {
+             queue[index].attempts += 1
+             queue[index].state = .retry
+@@ -433,6 +437,7 @@
+             queue[index].nextRetryAt = Date().addingTimeInterval(delay)
+         }
+         saveQueue(queue)
++        processorBusy = false
+         setProcessing(false)
+         publishError(message)
+         try? fm.removeItem(at: speechTempDirectory)
+@@ -500,9 +505,21 @@
+         try fm.createDirectory(at: queueURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+     }
+ 
+-    private func loadQueue() -> [TextQueueItem] {
+-        guard let data = try? Data(contentsOf: queueURL), var queue = try? decoder.decode([TextQueueItem].self, from: data) else { return [] }
+-        for index in queue.indices where queue[index].state == .processing { queue[index].state = .queued }
++    private func loadQueueRaw() -> [TextQueueItem] {
++        guard let data = try? Data(contentsOf: queueURL), let queue = try? decoder.decode([TextQueueItem].self, from: data) else { return [] }
++        return queue
++    }
++
++    private func loadQueueRecoveringInterruptedIfNeeded() -> [TextQueueItem] {
++        var queue = loadQueueRaw()
++        guard !recoveredInterruptedQueue else { return queue }
++        recoveredInterruptedQueue = true
++        var changed = false
++        for index in queue.indices where queue[index].state == .processing {
++            queue[index].state = .queued
++            changed = true
++        }
++        if changed { saveQueue(queue) }
+         return queue
+     }
+ 
