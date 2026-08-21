@@ -27,9 +27,13 @@ jobs:
               wearmemory_text_v100/source.part03 \
               wearmemory_text_v100/source.part04 \
             | base64 --decode > /tmp/WearMemoryText_v1.0.0_Source.zip
-          shasum -a 256 /tmp/WearMemoryText_v1.0.0_Source.zip
           unzip -t /tmp/WearMemoryText_v1.0.0_Source.zip
           ditto -x -k /tmp/WearMemoryText_v1.0.0_Source.zip /tmp/wmtext-src
+          sed -i '' 's/^    let drive = TextDriveSync()/    var drive = TextDriveSync()/' /tmp/wmtext-src/WearMemoryText/TextAppModel.swift
+          rm -f /tmp/WearMemoryText_v1.0.0_Source.zip
+          (cd /tmp/wmtext-src && zip -qry /tmp/WearMemoryText_v1.0.0_Source.zip .)
+          unzip -t /tmp/WearMemoryText_v1.0.0_Source.zip
+          shasum -a 256 /tmp/WearMemoryText_v1.0.0_Source.zip
 
       - name: Install XcodeGen
         run: brew install xcodegen
