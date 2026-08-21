@@ -29,7 +29,7 @@ jobs:
             | base64 --decode > /tmp/WearMemoryText_v1.0.0_Source.zip
           unzip -t /tmp/WearMemoryText_v1.0.0_Source.zip
           ditto -x -k /tmp/WearMemoryText_v1.0.0_Source.zip /tmp/wmtext101-src
-          base64 --decode wearmemory_text_v101/speech-fix.patch.gz.b64 > /tmp/wmt101.patch.gz
+          base64 -D -i wearmemory_text_v101/speech-fix.patch.gz.b64 -o /tmp/wmt101.patch.gz
           echo 'b2077cfa763ab2f8e1b4d494ac61755921bdbc81d8c75f91ce1005591a10d6c5  /tmp/wmt101.patch.gz' | shasum -a 256 -c -
           gunzip -c /tmp/wmt101.patch.gz > /tmp/wmt101.patch
           cd /tmp/wmtext101-src
