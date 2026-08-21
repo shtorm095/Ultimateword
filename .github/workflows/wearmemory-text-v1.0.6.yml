@@ -43,6 +43,7 @@ jobs:
           patch -p0 < /tmp/wmtext105.patch
 
           cp "$GITHUB_WORKSPACE/wearmemory_text_v106/TextProcessor.swift" WearMemoryText/TextProcessor.swift
+          cp "$GITHUB_WORKSPACE/wearmemory_text_v106/TextProcessorJournal.swift" WearMemoryText/TextProcessorJournal.swift
           /usr/libexec/PlistBuddy -c 'Set :CFBundleShortVersionString 1.0.6' WearMemoryText/Info.plist
           /usr/libexec/PlistBuddy -c 'Set :CFBundleVersion 7' WearMemoryText/Info.plist
 
@@ -53,8 +54,7 @@ jobs:
           grep -q 'SiriSpeechErrorDomain' "$SRC/TextProcessor.swift"
           grep -q 'speechErrorChain' "$SRC/TextProcessor.swift"
           grep -q 'let duration = min(8.0' "$SRC/TextProcessor.swift"
-          grep -q 'kAFAssistantErrorDomain\", 1100' "$SRC/TextProcessor.swift"
-          grep -q 'kLSRErrorDomain\", 102' "$SRC/TextProcessor.swift"
+          grep -q 'func journalFiles()' "$SRC/TextProcessorJournal.swift"
           ! grep -q 'SFSpeechURLRecognitionRequest(url:' "$SRC/TextProcessor.swift"
           ! grep -R -q 'AVAudioRecorder' "$SRC"
 
