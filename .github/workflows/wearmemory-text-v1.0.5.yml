@@ -15,16 +15,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Validate exact source
+      - name: Reconstruct patched source
         shell: bash
         run: |
           set -euo pipefail
-          cp wearmemory_text_v105/WearMemoryText_v1.0.5_Source.zip /tmp/WearMemoryText_v1.0.5_Source.zip
-          shasum -a 256 /tmp/WearMemoryText_v1.0.5_Source.zip
-          unzip -t /tmp/WearMemoryText_v1.0.5_Source.zip
+          cp wearmemory_text_v101/WearMemoryText_v1.0.1_Source.zip /tmp/WearMemoryText_v1.0.1_Source.zip
+          unzip -t /tmp/WearMemoryText_v1.0.1_Source.zip
           rm -rf /tmp/wmtext105-src
           mkdir -p /tmp/wmtext105-src
-          ditto -x -k /tmp/WearMemoryText_v1.0.5_Source.zip /tmp/wmtext105-src
+          ditto -x -k /tmp/WearMemoryText_v1.0.1_Source.zip /tmp/wmtext105-src
+          base64 -D < wearmemory_text_v105/speech-fix-v105.patch.gz.b64 | gunzip > /tmp/wmtext105.patch
+          echo "863ad1a0d4fcade0faa474fb011a1e6a3a1cbe507754ddccc063f4a5775abc3b  /tmp/wmtext105.patch" | shasum -a 256 -c -
+          cd /tmp/wmtext105-src
+          patch -p0 < /tmp/wmtext105.patch
           SRC=/tmp/wmtext105-src/WearMemoryText
           grep -q '1.0.5' "$SRC/Info.plist"
           grep -q '<string>6</string>' "$SRC/Info.plist"
@@ -38,6 +41,9 @@ jobs:
           grep -q 'cleanupCurrentSpeechTask' "$SRC/TextProcessor.swift"
           ! grep -R -q 'AVAudioRecorder' "$SRC"
           ! grep -R -q 'Audio Hören' "$SRC"
+          cd /tmp/wmtext105-src
+          zip -qry /tmp/WearMemoryText_v1.0.5_Source.zip .
+          unzip -t /tmp/WearMemoryText_v1.0.5_Source.zip
 
       - name: Install XcodeGen
         run: brew install xcodegen
