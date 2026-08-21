@@ -1,0 +1,123 @@
+d))
+                        .padding(.top, 8)
+
+                    sectionTitle("Состояние")
+                    statusCard
+
+                    sectionTitle("Запись")
+                    recordingCard
+
+                    sectionTitle("Хранение в Google Drive")
+                    storageCard
+
+                    sectionTitle("Фото и видео")
+                    mediaCard
+
+                    sectionTitle("ChatGPT без API")
+                    chatGPTCard
+
+                    sectionTitle("Последние записи")
+                    recentAudioCard
+
+                    if !model.logs.entries.isEmpty {
+                        sectionTitle("Последний распознанный текст")
+                        transcriptCard
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 26)
+            }
+        }
+    }
+
+    private var filesView: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    Text("Файлы")
+                        .font(.system(size: 34, weight: .bold, design: .rounded))
+                        .padding(.top, 10)
+
+                    sectionTitle("Google Drive")
+                    storageCard
+
+                    sectionTitle("Аудиобуфер на iPod")
+                    VStack(alignment: .leading, spacing: 10) {
+                        infoRow(icon: "waveform", title: "Фрагментов", value: "\(model.audio.segmentCount) / 480", tint: .blue)
+                        infoRow(icon: "externaldrive.fill", title: "Размер", value: formatBytes(model.audio.bufferBytes), tint: .purple)
+                    }
+                    .cardStyle()
+
+                    sectionTitle("Последние аудиофайлы")
+                    recentAudioCard
+
+                    sectionTitle("Текстовый журнал")
+                    Button {
+                        showShare = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "doc.text.fill")
+                                .font(.title2)
+                                .foregroundColor(.blue)
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text("Экспортировать дневной .txt")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                Text("Системное меню iOS")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            Spacer()
+                            Image(systemName: "square.and.arrow.up")
+                                .foregroundColor(.blue)
+                        }
+                        .padding(14)
+                        .cardStyle()
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 26)
+            }
+        }
+    }
+
+    private var recognitionView: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    Text("Распознавание")
+                        .font(.system(size: 34, weight: .bold, design: .rounded))
+                        .padding(.top, 10)
+
+                    VStack(spacing: 0) {
+                        compactSettingRow(icon: "globe", title: "Язык", tint: .blue) {
+                            Picker("", selection: $model.language) {
+                                ForEach(TranscriptionLanguage.allCases) { lang in
+                                    Text(lang.title).tag(lang)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                        }
+
+                        Divider().background(Color.white.opacity(0.08))
+
+                        compactSettingRow(icon: "doc.text.fill", title: "Дневной текстовый журнал", tint: .blue) {
+                            Toggle("", isOn: $model.transcriptionEnabled)
+                                .labelsHidden()
+                        }
+
+                        Divider().background(Color.white.opacity(0.08))
+
+                        compactSettingRow(icon: "brain.head.profile", title: "Только локальное распознавание", tint: .blue) {
+                            Toggle("", isOn: $model.onDeviceOnly)
+                                .labelsHidden()
+                        }
+                    }
+                    .cardStyle()
+
+                    sectionTitle("Speech")
+                    VStack(alignment: .leading, spacing: 10) {
+                        infoRow(icon: "bubble.left.and.waveform.fill", title: "Состояние", value: mode

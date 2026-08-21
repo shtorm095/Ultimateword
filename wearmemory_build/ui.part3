@@ -1,0 +1,120 @@
+l.transcription.statusText, tint: .purple)
+                        infoRow(icon: "iphone", title: "On-device", value: model.transcription.supportsOnDevice ? "поддерживается" : "не подтверждено", tint: .green)
+                    }
+                    .cardStyle()
+
+                    sectionTitle("Последние записи")
+                    transcriptCard
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 26)
+            }
+        }
+    }
+
+    private var settingsView: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    Text("Настройки")
+                        .font(.system(size: 34, weight: .bold, design: .rounded))
+                        .padding(.top, 10)
+
+                    sectionTitle("Устройство")
+                    VStack(alignment: .leading, spacing: 10) {
+                        infoRow(icon: "mic.fill", title: "Микрофон", value: model.audio.inputName, tint: .green)
+                        if model.batteryLevel >= 0 {
+                            infoRow(icon: "battery.50", title: "Батарея", value: "\(Int(model.batteryLevel * 100))%", tint: .green)
+                        }
+                        infoRow(icon: "clock.fill", title: "Аудиофрагмент", value: "3 минуты", tint: .orange)
+                        infoRow(icon: "archivebox.fill", title: "24 часа", value: "до 480 фрагментов", tint: .blue)
+                    }
+                    .cardStyle()
+
+                    sectionTitle("Папки")
+                    storageCard
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 26)
+            }
+        }
+    }
+
+    private var statusCard: some View {
+        HStack(spacing: 2) {
+            statusItem(
+                icon: model.audio.isRecording ? "record.circle.fill" : "stop.circle.fill",
+                iconColor: model.audio.isRecording ? .red : .gray,
+                title: "Запись",
+                value: model.audio.isRecording ? "идёт" : "стоп",
+                valueColor: model.audio.isRecording ? .green : .secondary
+            )
+
+            statusItem(
+                icon: "mic.fill",
+                iconColor: .green,
+                title: "Микрофон",
+                value: model.audio.inputName == "—" ? "—" : "активен",
+                valueColor: model.audio.inputName == "—" ? .secondary : .green
+            )
+
+            statusItem(
+                icon: "externaldrive.fill",
+                iconColor: .blue,
+                title: "Буфер",
+                value: "\(model.audio.segmentCount)/480",
+                valueColor: .blue
+            )
+
+            statusItem(
+                icon: "bubble.left.fill",
+                iconColor: .purple,
+                title: "Speech",
+                value: speechShortStatus,
+                valueColor: speechShortStatus == "готов" ? .green : .secondary
+            )
+        }
+        .padding(.vertical, 14)
+        .padding(.horizontal, 4)
+        .cardStyle()
+    }
+
+    private var recordingCard: some View {
+        HStack(spacing: 12) {
+            Button {
+                if model.audio.isRecording { model.audio.stop() }
+                else { model.audio.start() }
+            } label: {
+                VStack(spacing: 10) {
+                    ZStack {
+                        Circle()
+                            .fill(model.audio.isRecording ? Color.red : Color.blue)
+                            .frame(width: 112, height: 112)
+                            .shadow(color: (model.audio.isRecording ? Color.red : Color.blue).opacity(0.55), radius: 14)
+                        Circle()
+                            .stroke(Color.white.opacity(0.18), lineWidth: 2)
+                            .frame(width: 126, height: 126)
+                        Image(systemName: model.audio.isRecording ? "stop.fill" : "record.circle")
+                            .font(.system(size: 38, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                    Text(model.audio.isRecording ? "Остановить запись" : "Начать запись")
+                        .font(.headline)
+                        .foregroundColor(model.audio.isRecording ? .red : .blue)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                }
+            }
+            .buttonStyle(.plain)
+            .frame(width: 135)
+
+            VStack(spacing: 0) {
+                Button {
+                    selectedTab = 2
+                } label: {
+                    settingRow(icon: "doc.text.fill", title: "Дневной текстовый журнал", subtitle: model.transcriptionEnabled ? "Включён" : "Выключен", tint: .blue)
+                }
+                .buttonStyle(.plain)
+
+                
