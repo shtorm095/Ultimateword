@@ -1,0 +1,30 @@
+name: Diagnose WearMemory Text v1.0.4
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract known-good v1.0.1 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/wmtext-src && mkdir -p /tmp/wmtext-src
+          unzip -t wearmemory_text_v101/WearMemoryText_v1.0.1_Source.zip
+          ditto -x -k wearmemory_text_v101/WearMemoryText_v1.0.1_Source.zip /tmp/wmtext-src
+      - name: Print processor API and recognition code
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '===== TextProcessor.swift 1-520 ====='
+          nl -ba /tmp/wmtext-src/WearMemoryText/TextProcessor.swift | sed -n '1,520p'
+          echo '===== TextAppModel.swift ====='
+          nl -ba /tmp/wmtext-src/WearMemoryText/TextAppModel.swift | sed -n '1,360p'
