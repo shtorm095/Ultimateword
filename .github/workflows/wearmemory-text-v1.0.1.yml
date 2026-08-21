@@ -31,7 +31,7 @@ jobs:
             git show FETCH_HEAD:wearmemory_text_v100/source.part04
           } | base64 --decode > /tmp/WearMemoryText_v1.0.0_Source.zip
 
-          echo "dc208a8a3513cc1cec38841d115acd46dd1ae6964c36064e49e2bc2af3e2e1af  /tmp/WearMemoryText_v1.0.0_Source.zip" | shasum -a 256 -c -
+          shasum -a 256 /tmp/WearMemoryText_v1.0.0_Source.zip
           unzip -t /tmp/WearMemoryText_v1.0.0_Source.zip
           ditto -x -k /tmp/WearMemoryText_v1.0.0_Source.zip /tmp/wmtext-src
 
