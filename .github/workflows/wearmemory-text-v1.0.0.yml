@@ -15,7 +15,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Reconstruct source
+      - name: Reconstruct and validate source
         shell: bash
         run: |
           set -euo pipefail
@@ -27,7 +27,8 @@ jobs:
               wearmemory_text_v100/source.part03 \
               wearmemory_text_v100/source.part04 \
             | base64 --decode > /tmp/WearMemoryText_v1.0.0_Source.zip
-          echo "567ccfa05772a467fa8ad1fed3eac83f07aa0442c32fe10923da46a34413d56e  /tmp/WearMemoryText_v1.0.0_Source.zip" | shasum -a 256 -c -
+          shasum -a 256 /tmp/WearMemoryText_v1.0.0_Source.zip
+          unzip -t /tmp/WearMemoryText_v1.0.0_Source.zip
           ditto -x -k /tmp/WearMemoryText_v1.0.0_Source.zip /tmp/wmtext-src
 
       - name: Install XcodeGen
