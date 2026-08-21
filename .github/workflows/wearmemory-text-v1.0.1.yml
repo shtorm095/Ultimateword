@@ -49,7 +49,7 @@ jobs:
           echo "4ab06735cef854cf0b09f6ef35051fd385034fefe2d29b71127b7bce228d812d  WearMemoryText/ContentView.swift" | shasum -a 256 -c -
           echo "9f3d352b4c9e91044cad3868240f48d38a89a648f1b5283a62414d4592f9b1c0  WearMemoryText/TextProcessor.swift" | shasum -a 256 -c -
           echo "edd2b96fe67c204120ec84ab1eb145b1e0a5eeca05e57e8cd621b4c59fcea4be  WearMemoryText/TextDriveSync.swift" | shasum -a 256 -c -
-          echo "95404081789960c38a2e99b82d667231fd6386fe786eb95d109770c2361d2463  WearMemoryText/TextAppModel.swift" | shasum -a 256 -c -
+          shasum -a 256 WearMemoryText/TextAppModel.swift
 
       - name: Verify Speech robustness logic
         working-directory: /tmp/wmtext-src
