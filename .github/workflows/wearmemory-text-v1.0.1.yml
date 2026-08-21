@@ -38,6 +38,7 @@ jobs:
           cp wearmemory_text_v101_patch/Models.swift /tmp/wmtext-src/WearMemoryText/Models.swift
           cp wearmemory_text_v101_patch/Info.plist /tmp/wmtext-src/WearMemoryText/Info.plist
           cp wearmemory_text_v101_patch/ContentView.swift /tmp/wmtext-src/WearMemoryText/ContentView.swift
+          perl -0pi -e 's/    let drive = TextDriveSync\(\)/    var drive = TextDriveSync()/g' /tmp/wmtext-src/WearMemoryText/TextAppModel.swift
           cat wearmemory_text_v101_patch/TextProcessor.patch.part0 \
               wearmemory_text_v101_patch/TextProcessor.patch.part1 \
               > /tmp/TextProcessor.patch
@@ -49,6 +50,7 @@ jobs:
           echo "4ab06735cef854cf0b09f6ef35051fd385034fefe2d29b71127b7bce228d812d  WearMemoryText/ContentView.swift" | shasum -a 256 -c -
           echo "9f3d352b4c9e91044cad3868240f48d38a89a648f1b5283a62414d4592f9b1c0  WearMemoryText/TextProcessor.swift" | shasum -a 256 -c -
           echo "edd2b96fe67c204120ec84ab1eb145b1e0a5eeca05e57e8cd621b4c59fcea4be  WearMemoryText/TextDriveSync.swift" | shasum -a 256 -c -
+          grep -q 'var drive = TextDriveSync()' WearMemoryText/TextAppModel.swift
           shasum -a 256 WearMemoryText/TextAppModel.swift
 
       - name: Verify Speech robustness logic
