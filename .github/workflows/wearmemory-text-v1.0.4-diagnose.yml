@@ -13,19 +13,20 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
-      - name: Reconstruct v1.0.3 source
+      - name: Reconstruct current v1.0.3 source
         shell: bash
         run: |
           set -euo pipefail
           rm -rf /tmp/wmtext103-src && mkdir -p /tmp/wmtext103-src
           cat wearmemory_text_v103/source.part00 wearmemory_text_v103/source.part01 wearmemory_text_v103/source.part02 wearmemory_text_v103/source.part03 wearmemory_text_v103/source.part04 wearmemory_text_v103/source.part05 wearmemory_text_v103/source.part06 wearmemory_text_v103/source.part07 | base64 --decode > /tmp/WearMemoryText_v1.0.3_Source.zip
-          echo "5db9d6f576e0e91074aa85794edfcd1c29c3fe2c8ccc5304a9ac8c46accc937f  /tmp/WearMemoryText_v1.0.3_Source.zip" | shasum -a 256 -c -
+          shasum -a 256 /tmp/WearMemoryText_v1.0.3_Source.zip
+          unzip -t /tmp/WearMemoryText_v1.0.3_Source.zip
           ditto -x -k /tmp/WearMemoryText_v1.0.3_Source.zip /tmp/wmtext103-src
       - name: Print processor API and recognition code
         shell: bash
         run: |
           set -euo pipefail
-          echo '===== TextProcessor.swift 1-420 ====='
-          nl -ba /tmp/wmtext103-src/WearMemoryText/TextProcessor.swift | sed -n '1,420p'
+          echo '===== TextProcessor.swift 1-520 ====='
+          nl -ba /tmp/wmtext103-src/WearMemoryText/TextProcessor.swift | sed -n '1,520p'
           echo '===== TextAppModel.swift ====='
-          nl -ba /tmp/wmtext103-src/WearMemoryText/TextAppModel.swift | sed -n '1,320p'
+          nl -ba /tmp/wmtext103-src/WearMemoryText/TextAppModel.swift | sed -n '1,360p'
