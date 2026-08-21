@@ -15,18 +15,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Validate source archive
+      - name: Reconstruct proven v1.0.0 source
         shell: bash
         run: |
           set -euo pipefail
-          SRC=wearmemory_text_v101/WearMemoryText_v1.0.1_Source.zip
-          echo "8c419c628ed6aabaa1d365907e520f4c504b12a9f136f9a9b6b7f4d327ff44e6  $SRC" | shasum -a 256 -c -
-          unzip -t "$SRC"
           rm -rf /tmp/wmtext101-src
           mkdir -p /tmp/wmtext101-src
-          ditto -x -k "$SRC" /tmp/wmtext101-src
+          cat wearmemory_text_v100/source.part00 \
+              wearmemory_text_v100/source.part01 \
+              wearmemory_text_v100/source.part02 \
+              wearmemory_text_v100/source.part03 \
+              wearmemory_text_v100/source.part04 \
+            | base64 --decode > /tmp/WearMemoryText_v1.0.0_Source.zip
+          unzip -t /tmp/WearMemoryText_v1.0.0_Source.zip
+          ditto -x -k /tmp/WearMemoryText_v1.0.0_Source.zip /tmp/wmtext101-src
 
-      - name: Verify Speech fix source
+      - name: Apply verified v1.0.1 Speech patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s' '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' | base64 --decode > /tmp/wmt101.patch.gz
+          echo 'b2077cfa763ab2f8e1b4d494ac61755921bdbc81d8c75f91ce1005591a10d6c5  /tmp/wmt101.patch.gz' | shasum -a 256 -c -
+          gunzip -c /tmp/wmt101.patch.gz > /tmp/wmt101.patch
+          cd /tmp/wmtext101-src
+          patch -p4 < /tmp/wmt101.patch
+
+      - name: Verify patched source
         shell: bash
         run: |
           set -euo pipefail
@@ -40,6 +54,8 @@ jobs:
           grep -q '<string>2</string>' "$SRC/Info.plist"
           ! grep -R -q 'AVAudioRecorder' "$SRC"
           ! grep -R -q 'Audio Hören' "$SRC"
+          cd /tmp/wmtext101-src
+          zip -qry /tmp/WearMemoryText_v1.0.1_Source.zip WearMemoryText project.yml
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -53,25 +69,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          xcodebuild \
-            -project WearMemoryText.xcodeproj \
-            -scheme WearMemoryText \
-            -configuration Release \
-            -sdk iphoneos \
-            -derivedDataPath /tmp/wmtext101-derived \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            ARCHS=arm64 \
-            ONLY_ACTIVE_ARCH=YES \
-            IPHONEOS_DEPLOYMENT_TARGET=15.0 \
-            clean build | tee /tmp/wmtext101-build.log
+          xcodebuild -project WearMemoryText.xcodeproj -scheme WearMemoryText -configuration Release -sdk iphoneos -derivedDataPath /tmp/wmtext101-derived CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" ARCHS=arm64 ONLY_ACTIVE_ARCH=YES IPHONEOS_DEPLOYMENT_TARGET=15.0 clean build | tee /tmp/wmtext101-build.log
 
-      - name: Package and ad-hoc sign for TrollStore
+      - name: Package and sign for TrollStore
         shell: bash
         run: |
           set -euo pipefail
-          APP="/tmp/wmtext101-derived/Build/Products/Release-iphoneos/WearMemoryText.app"
+          APP=/tmp/wmtext101-derived/Build/Products/Release-iphoneos/WearMemoryText.app
           test -d "$APP"
           /usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$APP/Info.plist" | grep -Fx 'WearMemory Text'
           /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist" | grep -Fx 'local.pavel.WearMemoryText'
@@ -79,35 +83,26 @@ jobs:
           /usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Info.plist" | grep -Fx '2'
           /usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$APP/Info.plist" | grep -Fx '15.0'
           lipo -archs "$APP/WearMemoryText" | grep -w arm64
-
           codesign --force --sign - --entitlements /tmp/wmtext101-src/WearMemoryText/WearMemoryText.entitlements "$APP"
           codesign --verify --deep --strict "$APP"
           codesign -d --entitlements :- "$APP" > /tmp/wmtext101-entitlements.plist 2>&1
           grep -q 'group.local.pavel.WearMemory' /tmp/wmtext101-entitlements.plist
           grep -q 'TROLLTROLL.\*' /tmp/wmtext101-entitlements.plist
-
-          rm -rf /tmp/wmtext101-payload
-          mkdir -p /tmp/wmtext101-payload/Payload
+          rm -rf /tmp/wmtext101-payload && mkdir -p /tmp/wmtext101-payload/Payload
           ditto "$APP" /tmp/wmtext101-payload/Payload/WearMemoryText.app
           cd /tmp/wmtext101-payload
           zip -qry /tmp/WearMemoryText_v1.0.1b2_iOS15.ipa Payload
           unzip -t /tmp/WearMemoryText_v1.0.1b2_iOS15.ipa
           shasum -a 256 /tmp/WearMemoryText_v1.0.1b2_iOS15.ipa > /tmp/WearMemoryText_v1.0.1b2_iOS15.ipa.sha256
 
-      - name: Prepare artifact
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p /tmp/wmtext101-artifact
-          cp /tmp/WearMemoryText_v1.0.1b2_iOS15.ipa /tmp/wmtext101-artifact/
-          cp /tmp/WearMemoryText_v1.0.1b2_iOS15.ipa.sha256 /tmp/wmtext101-artifact/
-          cp wearmemory_text_v101/WearMemoryText_v1.0.1_Source.zip /tmp/wmtext101-artifact/
-          cp /tmp/wmtext101-entitlements.plist /tmp/wmtext101-artifact/
-          cp /tmp/wmtext101-build.log /tmp/wmtext101-artifact/
-
       - name: Upload verified IPA
         uses: actions/upload-artifact@v4
         with:
           name: WearMemoryText-v1.0.1-CleanInstall
-          path: /tmp/wmtext101-artifact/*
+          path: |
+            /tmp/WearMemoryText_v1.0.1b2_iOS15.ipa
+            /tmp/WearMemoryText_v1.0.1b2_iOS15.ipa.sha256
+            /tmp/WearMemoryText_v1.0.1_Source.zip
+            /tmp/wmtext101-entitlements.plist
+            /tmp/wmtext101-build.log
           retention-days: 7
