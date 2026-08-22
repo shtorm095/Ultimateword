@@ -21,8 +21,8 @@ struct ContentView: View {
                             row("Modell", "Whisper Base")
                             row("Sprache", "Deutsch (de)")
                             row("Verarbeitung", "100 % offline")
-                            row("Threads", "2")
-                            row("Build", "5")
+                            row("Threads", "1 (A10 Safe)")
+                            row("Build", "6")
                         }.frame(maxWidth: .infinity, alignment: .leading)
                     }
 
@@ -125,7 +125,7 @@ struct ContentView: View {
     }
 
     private func runWhisper() {
-        resetRun(); status = "Whisper läuft…"
+        resetRun(); status = "Whisper Diagnose + Safe läuft…"
         DispatchQueue.global(qos: .userInitiated).async {
             do {
                 let r = try engine.transcribeLatest()
