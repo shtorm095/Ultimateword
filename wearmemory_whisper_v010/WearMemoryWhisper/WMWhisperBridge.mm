@@ -12,6 +12,38 @@ static char *wm_copy_string(const std::string &value) {
     return out;
 }
 
+static whisper_context_params wm_context_params() {
+    whisper_context_params cparams = whisper_context_default_params();
+    cparams.use_gpu = false;
+    return cparams;
+}
+
+int wm_whisper_test_model(const char *modelPath,
+                          double *elapsedSeconds,
+                          char **errorOut) {
+    if (errorOut) *errorOut = nullptr;
+    if (!modelPath) {
+        if (errorOut) *errorOut = wm_copy_string("Ungültiger Modellpfad");
+        return -1;
+    }
+
+    const auto started = std::chrono::steady_clock::now();
+    whisper_context *ctx = whisper_init_from_file_with_params(modelPath, wm_context_params());
+    const auto loaded = std::chrono::steady_clock::now();
+    if (elapsedSeconds) {
+        *elapsedSeconds = std::chrono::duration<double>(loaded - started).count();
+    }
+    if (!ctx) {
+        if (errorOut) *errorOut = wm_copy_string("Whisper Base konnte nicht geladen werden");
+        return -2;
+    }
+
+    // Important: this diagnostic deliberately does nothing except load and free the model.
+    // No audio, no whisper_full, no decoder work.
+    whisper_free(ctx);
+    return 0;
+}
+
 const char *wm_whisper_transcribe(const char *modelPath,
                                   const float *samples,
                                   int sampleCount,
@@ -24,12 +56,7 @@ const char *wm_whisper_transcribe(const char *modelPath,
         return nullptr;
     }
 
-    whisper_context_params cparams = whisper_context_default_params();
-    // First A10/iOS 15 benchmark deliberately uses CPU/Accelerate only.
-    // This avoids newer Metal feature dependencies while we establish a reliable baseline.
-    cparams.use_gpu = false;
-
-    whisper_context *ctx = whisper_init_from_file_with_params(modelPath, cparams);
+    whisper_context *ctx = whisper_init_from_file_with_params(modelPath, wm_context_params());
     if (!ctx) {
         if (errorOut) *errorOut = wm_copy_string("Whisper-Modell konnte nicht geladen werden");
         return nullptr;
