@@ -1,0 +1,40 @@
+name: Build WearMemory Text v1.2.1 Whisper Production IPA
+
+on:
+  push:
+    branches: [ wearmemory-text-whisper-prototype ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: wearmemory-text-whisper-production-prototype
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build production WearMemory Text with Whisper Base CPU NoBLAS
+        shell: bash
+        run: bash wearmemory_text_v121/build_production.sh
+
+      - name: Upload verified production IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: WearMemoryText-v1.2.1-WhisperBase-CPU-NoBLAS-iOS15
+          path: |
+            /tmp/WearMemoryText_v1.2.1b21_WhisperBase_CPU_NoBLAS_iOS15.ipa
+            /tmp/WearMemoryText_v1.2.1b21_WhisperBase_CPU_NoBLAS_iOS15.ipa.sha256
+            /tmp/WearMemoryText_v1.2.1_Source.zip
+            /tmp/wmtext121-entitlements.plist
+            /tmp/wmtext121-build.log
+          compression-level: 0
+          retention-days: 7
