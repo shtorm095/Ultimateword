@@ -22,7 +22,7 @@ struct ContentView: View {
                             row("Sprache", "Deutsch (de)")
                             row("Verarbeitung", "100 % offline")
                             row("Threads", "2")
-                            row("Build", "3")
+                            row("Build", "4")
                         }.frame(maxWidth: .infinity, alignment: .leading)
                     }
 
@@ -30,10 +30,14 @@ struct ContentView: View {
                         Text("1. M4A / 16 kHz testen").frame(maxWidth: .infinity).padding(.vertical, 8)
                     }.buttonStyle(.borderedProminent).disabled(isRunning)
 
+                    Button(action: testModel) {
+                        Text("2. Whisper Base laden testen").frame(maxWidth: .infinity).padding(.vertical, 8)
+                    }.buttonStyle(.borderedProminent).disabled(isRunning)
+
                     Button(action: runWhisper) {
                         HStack {
                             if isRunning { ProgressView().padding(.trailing, 6) }
-                            Text("2. Whisper erkennen").frame(maxWidth: .infinity)
+                            Text("3. Whisper erkennen").frame(maxWidth: .infinity)
                         }.padding(.vertical, 8)
                     }.buttonStyle(.borderedProminent).disabled(isRunning)
 
@@ -69,7 +73,12 @@ struct ContentView: View {
     }
 
     private func resetRun() {
-        isRunning = true; transcript = ""; sourceName = "—"; audioTime = "—"; processingTime = "—"; outputName = "—"
+        isRunning = true
+        transcript = ""
+        sourceName = "—"
+        audioTime = "—"
+        processingTime = "—"
+        outputName = "—"
     }
 
     private func testAudio() {
@@ -86,7 +95,30 @@ struct ContentView: View {
                 }
             } catch {
                 DispatchQueue.main.async {
-                    lastStage = WhisperEngine.lastStage(); status = "Fehler: \(error.localizedDescription)"; isRunning = false
+                    lastStage = WhisperEngine.lastStage()
+                    status = "Fehler: \(error.localizedDescription)"
+                    isRunning = false
+                }
+            }
+        }
+    }
+
+    private func testModel() {
+        resetRun(); status = "Teste nur Whisper Base laden/freigeben…"
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                let r = try engine.probeModelLoad()
+                DispatchQueue.main.async {
+                    processingTime = String(format: "Base geladen in %.2f s", r.loadSeconds)
+                    lastStage = WhisperEngine.lastStage()
+                    status = "Whisper Base laden/freigeben OK"
+                    isRunning = false
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    lastStage = WhisperEngine.lastStage()
+                    status = "Fehler: \(error.localizedDescription)"
+                    isRunning = false
                 }
             }
         }
@@ -98,13 +130,20 @@ struct ContentView: View {
             do {
                 let r = try engine.transcribeLatest()
                 DispatchQueue.main.async {
-                    sourceName = r.sourceName; audioTime = String(format: "%.1f s", r.audioSeconds)
-                    processingTime = String(format: "%.1f s", r.processingSeconds); outputName = r.outputURL.lastPathComponent
-                    transcript = r.text; lastStage = WhisperEngine.lastStage(); status = r.text.isEmpty ? "Fertig, kein Text" : "Fertig"; isRunning = false
+                    sourceName = r.sourceName
+                    audioTime = String(format: "%.1f s", r.audioSeconds)
+                    processingTime = String(format: "%.1f s", r.processingSeconds)
+                    outputName = r.outputURL.lastPathComponent
+                    transcript = r.text
+                    lastStage = WhisperEngine.lastStage()
+                    status = r.text.isEmpty ? "Fertig, kein Text" : "Fertig"
+                    isRunning = false
                 }
             } catch {
                 DispatchQueue.main.async {
-                    lastStage = WhisperEngine.lastStage(); status = "Fehler: \(error.localizedDescription)"; isRunning = false
+                    lastStage = WhisperEngine.lastStage()
+                    status = "Fehler: \(error.localizedDescription)"
+                    isRunning = false
                 }
             }
         }
