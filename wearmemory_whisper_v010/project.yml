@@ -1,0 +1,30 @@
+name: WearMemoryWhisper
+options:
+  bundleIdPrefix: local.pavel
+  deploymentTarget:
+    iOS: "15.0"
+targets:
+  WearMemoryWhisper:
+    type: application
+    platform: iOS
+    sources:
+      - path: WearMemoryWhisper
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: local.pavel.WearMemoryWhisper
+        PRODUCT_NAME: WearMemoryWhisper
+        INFOPLIST_FILE: WearMemoryWhisper/Info.plist
+        CODE_SIGN_ENTITLEMENTS: WearMemoryWhisper/WearMemoryWhisper.entitlements
+        SWIFT_OBJC_BRIDGING_HEADER: WearMemoryWhisper/WMWhisper-Bridging-Header.h
+        HEADER_SEARCH_PATHS: "$(SRCROOT)/VendorHeaders"
+        LIBRARY_SEARCH_PATHS: "$(SRCROOT)/VendorLib"
+        OTHER_LDFLAGS: "-lwmwhisper -lc++"
+        IPHONEOS_DEPLOYMENT_TARGET: "15.0"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SWIFT_VERSION: "5.0"
+        CLANG_CXX_LANGUAGE_STANDARD: "c++17"
+        CLANG_CXX_LIBRARY: "libc++"
+    dependencies:
+      - sdk: AVFoundation.framework
+      - sdk: CoreMedia.framework
+      - sdk: AudioToolbox.framework

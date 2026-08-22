@@ -1,0 +1,111 @@
+name: Build WearMemory Whisper v0.1.0 iOS15 IPA
+
+on:
+  push:
+    branches: [ wearmemory-text-whisper-prototype ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: wearmemory-whisper-ios15
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Prepare app source
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/wmwhisper /tmp/whisper-src /tmp/whisper-build
+          cp -R wearmemory_whisper_v010 /tmp/wmwhisper
+          mkdir -p /tmp/wmwhisper/VendorHeaders /tmp/wmwhisper/VendorLib /tmp/wmwhisper/WearMemoryWhisper/Models
+          plutil -lint /tmp/wmwhisper/WearMemoryWhisper/Info.plist
+          plutil -lint /tmp/wmwhisper/WearMemoryWhisper/WearMemoryWhisper.entitlements
+      - name: Fetch pinned whisper.cpp source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/ggml-org/whisper.cpp.git /tmp/whisper-src
+          cd /tmp/whisper-src
+          git checkout 233fe1fc9b48a09e361d3594520838ca266537fe
+          test "$(git rev-parse HEAD)" = "233fe1fc9b48a09e361d3594520838ca266537fe"
+          grep -q 'MIT License' LICENSE
+      - name: Build whisper.cpp static arm64 library for iOS 15 without BLAS
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S /tmp/whisper-src -B /tmp/whisper-build -G Xcode \
+            -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 -DBUILD_SHARED_LIBS=OFF \
+            -DWHISPER_BUILD_EXAMPLES=OFF -DWHISPER_BUILD_TESTS=OFF -DWHISPER_BUILD_SERVER=OFF \
+            -DWHISPER_COREML=OFF -DGGML_METAL=OFF -DGGML_BLAS=OFF -DGGML_ACCELERATE=OFF \
+            -DGGML_OPENMP=OFF -DGGML_NATIVE=OFF -DGGML_CPU_KLEIDIAI=OFF
+          cmake --build /tmp/whisper-build --config Release --target whisper -- -quiet
+          WHISPER_LIB=$(find /tmp/whisper-build -name libwhisper.a -type f | head -1)
+          GGML_LIB=$(find /tmp/whisper-build -name libggml.a -type f | head -1)
+          BASE_LIB=$(find /tmp/whisper-build -name libggml-base.a -type f | head -1)
+          CPU_LIB=$(find /tmp/whisper-build -name libggml-cpu.a -type f | head -1)
+          for f in "$WHISPER_LIB" "$GGML_LIB" "$BASE_LIB" "$CPU_LIB"; do test -f "$f"; done
+          /usr/bin/libtool -static -o /tmp/wmwhisper/VendorLib/libwmwhisper.a "$WHISPER_LIB" "$GGML_LIB" "$BASE_LIB" "$CPU_LIB"
+          lipo -archs /tmp/wmwhisper/VendorLib/libwmwhisper.a | grep -w arm64
+          cp -R /tmp/whisper-src/include/. /tmp/wmwhisper/VendorHeaders/
+          cp -R /tmp/whisper-src/ggml/include/. /tmp/wmwhisper/VendorHeaders/
+      - name: Download official multilingual Whisper Base weights
+        shell: bash
+        run: |
+          set -euo pipefail
+          MODEL=/tmp/wmwhisper/WearMemoryWhisper/Models/ggml-base.bin
+          curl -L --fail --retry 5 --retry-delay 3 -o "$MODEL" https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin
+          echo '465707469ff3a37a2b9b8d8f89f2f99de7299dac  '"$MODEL" | shasum -c -
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate Xcode project
+        working-directory: /tmp/wmwhisper
+        run: xcodegen generate
+      - name: Build arm64 iOS 15 app
+        working-directory: /tmp/wmwhisper
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -project WearMemoryWhisper.xcodeproj -scheme WearMemoryWhisper -configuration Release -sdk iphoneos \
+            -destination 'generic/platform=iOS' -derivedDataPath /tmp/wmwhisper-derived \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' ARCHS=arm64 ONLY_ACTIVE_ARCH=YES \
+            IPHONEOS_DEPLOYMENT_TARGET=15.0 clean build | tee /tmp/wmwhisper-build.log
+      - name: Verify, sign and package IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP=/tmp/wmwhisper-derived/Build/Products/Release-iphoneos/WearMemoryWhisper.app
+          test -d "$APP"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Info.plist" | grep -Fx '7'
+          /usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$APP/Info.plist" | grep -Fx '15.0'
+          lipo -archs "$APP/WearMemoryWhisper" | grep -w arm64
+          test -f "$APP/ggml-base.bin"
+          echo '465707469ff3a37a2b9b8d8f89f2f99de7299dac  '"$APP/ggml-base.bin" | shasum -c -
+          codesign --force --sign - --entitlements /tmp/wmwhisper/WearMemoryWhisper/WearMemoryWhisper.entitlements "$APP"
+          codesign --verify --deep --strict "$APP"
+          rm -rf /tmp/wmwhisper-payload && mkdir -p /tmp/wmwhisper-payload/Payload
+          ditto "$APP" /tmp/wmwhisper-payload/Payload/WearMemoryWhisper.app
+          cd /tmp/wmwhisper-payload
+          zip -qry /tmp/WearMemoryWhisper_v0.1.0b7_Base_German_iOS15_CPU_NoBLAS.ipa Payload
+          unzip -t /tmp/WearMemoryWhisper_v0.1.0b7_Base_German_iOS15_CPU_NoBLAS.ipa
+          shasum -a 256 /tmp/WearMemoryWhisper_v0.1.0b7_Base_German_iOS15_CPU_NoBLAS.ipa > /tmp/WearMemoryWhisper_v0.1.0b7_Base_German_iOS15_CPU_NoBLAS.ipa.sha256
+      - name: Upload verified IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: WearMemoryWhisper-v0.1.0b7-Base-German-iOS15-CPU-NoBLAS
+          path: |
+            /tmp/WearMemoryWhisper_v0.1.0b7_Base_German_iOS15_CPU_NoBLAS.ipa
+            /tmp/WearMemoryWhisper_v0.1.0b7_Base_German_iOS15_CPU_NoBLAS.ipa.sha256
+            /tmp/wmwhisper-build.log
+          compression-level: 0
+          retention-days: 7
