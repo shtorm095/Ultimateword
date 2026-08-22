@@ -3,6 +3,8 @@ name: Build WearMemory Whisper v0.1.0 iOS15 IPA
 on:
   push:
     branches: [ wearmemory-text-whisper-prototype ]
+  pull_request:
+    branches: [ main ]
   workflow_dispatch:
 
 permissions:
