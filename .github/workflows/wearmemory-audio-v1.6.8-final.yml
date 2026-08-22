@@ -52,6 +52,7 @@ jobs:
           patch -p1 < /tmp/wm165.patch
           WM_AUDIO_ROOT=/tmp/wm168 python3 "$GITHUB_WORKSPACE/final/wearmemory_audio_v166/localonly_patch.py"
           python3 "$GITHUB_WORKSPACE/final/wearmemory_audio_v168/final_audio_patch.py"
+          python3 "$GITHUB_WORKSPACE/final/wearmemory_audio_v168/open_text_patch.py"
 
           plutil -lint WearMemory/Info.plist
           plutil -lint WearMemory/WearMemory.entitlements
@@ -59,6 +60,7 @@ jobs:
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' WearMemory/Info.plist)" = '26'
           grep -F 'group.local.pavel.WearMemory' WearMemory/WearMemory.entitlements
           grep -F 'wearmemory-text://recording-started' WearMemory/AppModel.swift
+          grep -F 'onManualRecordingStarted' WearMemory/AudioBufferManager.swift
           grep -F 'AudioInbox' WearMemory/AppModel.swift
           grep -F 'selectedInputUID' WearMemory/AudioBufferManager.swift
           grep -F 'setPreferredInput' WearMemory/AudioBufferManager.swift
