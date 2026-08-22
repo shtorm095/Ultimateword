@@ -48,8 +48,8 @@ python3 "$ROOT/wearmemory_text_v121/whisper_production_patch.py"
 
 SRC=/tmp/wmtext121-src/WearMemoryText
 plutil -lint "$SRC/Info.plist"
-/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$SRC/Info.plist" | grep -Fx '1.2.1'
-/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$SRC/Info.plist" | grep -Fx '21'
+/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$SRC/Info.plist" | grep -Fx '1.2.2'
+/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$SRC/Info.plist" | grep -Fx '22'
 grep -Fq 'WhisperLocalRecognizer.transcribe(url: sourceURL)' "$SRC/TextProcessor.swift"
 ! grep -Fq 'guard speechAuthorization == .authorized' "$SRC/TextProcessor.swift"
 grep -Fq 'Whisper Base · Deutsch · offline' "$SRC/TextProcessor.swift"
@@ -60,6 +60,11 @@ grep -Fq 'params.language = "de"' "$SRC/WMWhisperProductionBridge.mm"
 grep -Fq 'params.n_threads = 1' "$SRC/WMWhisperProductionBridge.mm"
 grep -Fq 'params.greedy.best_of = 1' "$SRC/WMWhisperProductionBridge.mm"
 grep -Fq 'params.temperature_inc = 0.0f' "$SRC/WMWhisperProductionBridge.mm"
+grep -Fq 'whisper_full_get_token_p' "$SRC/WMWhisperProductionBridge.mm"
+grep -Fq 'GermanTranscriptPostProcessor.process' "$SRC/WhisperLocalRecognizer.swift"
+grep -Fq 'Brüstungskanal' "$SRC/GermanTranscriptPostProcessor.swift"
+grep -Fq 'VDE-AR-N 4100' "$SRC/GermanTranscriptPostProcessor.swift"
+grep -Fq 'ambiguousCorrectionThreshold' "$SRC/GermanTranscriptPostProcessor.swift"
 grep -q 'func writeSegmentText' "$SRC/TextProcessor.swift"
 grep -q 'AVMutableComposition()' "$SRC/TextProcessor.swift"
 grep -q 'func enqueueAudio(_ audioURL: URL)' "$SRC/TextDriveSync.swift"
@@ -127,8 +132,8 @@ APP=/tmp/wmtext121-derived/Build/Products/Release-iphoneos/WearMemoryText.app
 test -d "$APP"
 /usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$APP/Info.plist" | grep -Fx 'WearMemory Text'
 /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist" | grep -Fx 'local.pavel.WearMemoryText'
-/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Info.plist" | grep -Fx '1.2.1'
-/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Info.plist" | grep -Fx '21'
+/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Info.plist" | grep -Fx '1.2.2'
+/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Info.plist" | grep -Fx '22'
 /usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$APP/Info.plist" | grep -Fx '15.0'
 lipo -archs "$APP/WearMemoryText" | grep -w arm64
 cp /tmp/ggml-base.bin "$APP/ggml-base.bin"
@@ -144,10 +149,14 @@ rm -rf /tmp/wmtext121-payload
 mkdir -p /tmp/wmtext121-payload/Payload
 ditto "$APP" /tmp/wmtext121-payload/Payload/WearMemoryText.app
 cd /tmp/wmtext121-payload
-zip -qry /tmp/WearMemoryText_v1.2.1b21_WhisperBase_CPU_NoBLAS_iOS15.ipa Payload
-unzip -t /tmp/WearMemoryText_v1.2.1b21_WhisperBase_CPU_NoBLAS_iOS15.ipa
-shasum -a 256 /tmp/WearMemoryText_v1.2.1b21_WhisperBase_CPU_NoBLAS_iOS15.ipa > /tmp/WearMemoryText_v1.2.1b21_WhisperBase_CPU_NoBLAS_iOS15.ipa.sha256
+zip -qry /tmp/WearMemoryText_v1.2.2b22_GermanTechnical_Confidence_iOS15.ipa Payload
+unzip -t /tmp/WearMemoryText_v1.2.2b22_GermanTechnical_Confidence_iOS15.ipa
+shasum -a 256 /tmp/WearMemoryText_v1.2.2b22_GermanTechnical_Confidence_iOS15.ipa > /tmp/WearMemoryText_v1.2.2b22_GermanTechnical_Confidence_iOS15.ipa.sha256
+# Compatibility names keep the existing verified PR workflow upload step working.
+cp /tmp/WearMemoryText_v1.2.2b22_GermanTechnical_Confidence_iOS15.ipa /tmp/WearMemoryText_v1.2.1b21_WhisperBase_CPU_NoBLAS_iOS15.ipa
+cp /tmp/WearMemoryText_v1.2.2b22_GermanTechnical_Confidence_iOS15.ipa.sha256 /tmp/WearMemoryText_v1.2.1b21_WhisperBase_CPU_NoBLAS_iOS15.ipa.sha256
 
 cd /tmp/wmtext121-src
-zip -qry /tmp/WearMemoryText_v1.2.1_Source.zip WearMemoryText project.yml
-unzip -t /tmp/WearMemoryText_v1.2.1_Source.zip
+zip -qry /tmp/WearMemoryText_v1.2.2_Source.zip WearMemoryText project.yml
+unzip -t /tmp/WearMemoryText_v1.2.2_Source.zip
+cp /tmp/WearMemoryText_v1.2.2_Source.zip /tmp/WearMemoryText_v1.2.1_Source.zip
