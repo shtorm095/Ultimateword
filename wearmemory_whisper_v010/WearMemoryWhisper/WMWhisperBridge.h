@@ -11,6 +11,17 @@ int wm_whisper_test_model(const char * _Nonnull modelPath,
 void * _Nullable wm_whisper_create_context(const char * _Nonnull modelPath,
                                             char * _Nullable * _Nullable errorOut);
 
+int wm_whisper_pcm_to_mel(void * _Nonnull context,
+                          const float * _Nonnull samples,
+                          int sampleCount,
+                          int threads,
+                          char * _Nullable * _Nullable errorOut);
+
+int wm_whisper_encode_only(void * _Nonnull context,
+                           int offset,
+                           int threads,
+                           char * _Nullable * _Nullable errorOut);
+
 int wm_whisper_run_full(void * _Nonnull context,
                         const float * _Nonnull samples,
                         int sampleCount,
