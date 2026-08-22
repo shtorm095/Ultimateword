@@ -1,0 +1,3 @@
+WearMemory Text 1.2.1 build 21
+Whisper Base German
+CPU only, BLAS OFF, Accelerate OFF
