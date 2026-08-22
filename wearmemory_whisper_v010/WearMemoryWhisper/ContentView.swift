@@ -22,7 +22,7 @@ struct ContentView: View {
                             row("Sprache", "Deutsch (de)")
                             row("Verarbeitung", "100 % offline")
                             row("Threads", "2")
-                            row("Build", "4")
+                            row("Build", "5")
                         }.frame(maxWidth: .infinity, alignment: .leading)
                     }
 
