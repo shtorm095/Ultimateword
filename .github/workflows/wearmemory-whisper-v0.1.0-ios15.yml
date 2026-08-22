@@ -87,7 +87,7 @@ jobs:
           set -euo pipefail
           APP=/tmp/wmwhisper-derived/Build/Products/Release-iphoneos/WearMemoryWhisper.app
           test -d "$APP"
-          /usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Info.plist" | grep -Fx '5'
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Info.plist" | grep -Fx '6'
           /usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$APP/Info.plist" | grep -Fx '15.0'
           lipo -archs "$APP/WearMemoryWhisper" | grep -w arm64
           test -f "$APP/ggml-base.bin"
@@ -97,16 +97,16 @@ jobs:
           rm -rf /tmp/wmwhisper-payload && mkdir -p /tmp/wmwhisper-payload/Payload
           ditto "$APP" /tmp/wmwhisper-payload/Payload/WearMemoryWhisper.app
           cd /tmp/wmwhisper-payload
-          zip -qry /tmp/WearMemoryWhisper_v0.1.0b5_Base_German_iOS15.ipa Payload
-          unzip -t /tmp/WearMemoryWhisper_v0.1.0b5_Base_German_iOS15.ipa
-          shasum -a 256 /tmp/WearMemoryWhisper_v0.1.0b5_Base_German_iOS15.ipa > /tmp/WearMemoryWhisper_v0.1.0b5_Base_German_iOS15.ipa.sha256
+          zip -qry /tmp/WearMemoryWhisper_v0.1.0b6_Base_German_iOS15.ipa Payload
+          unzip -t /tmp/WearMemoryWhisper_v0.1.0b6_Base_German_iOS15.ipa
+          shasum -a 256 /tmp/WearMemoryWhisper_v0.1.0b6_Base_German_iOS15.ipa > /tmp/WearMemoryWhisper_v0.1.0b6_Base_German_iOS15.ipa.sha256
       - name: Upload verified IPA
         uses: actions/upload-artifact@v4
         with:
-          name: WearMemoryWhisper-v0.1.0b5-Base-German-iOS15
+          name: WearMemoryWhisper-v0.1.0b6-Base-German-iOS15
           path: |
-            /tmp/WearMemoryWhisper_v0.1.0b5_Base_German_iOS15.ipa
-            /tmp/WearMemoryWhisper_v0.1.0b5_Base_German_iOS15.ipa.sha256
+            /tmp/WearMemoryWhisper_v0.1.0b6_Base_German_iOS15.ipa
+            /tmp/WearMemoryWhisper_v0.1.0b6_Base_German_iOS15.ipa.sha256
             /tmp/wmwhisper-build.log
           compression-level: 0
           retention-days: 7
