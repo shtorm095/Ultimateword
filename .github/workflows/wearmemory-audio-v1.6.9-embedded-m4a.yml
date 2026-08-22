@@ -1,0 +1,137 @@
+name: Build WearMemory Audio v1.6.9 Embedded-M4A IPA
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Checkout source carrier
+        uses: actions/checkout@v4
+        with:
+          ref: wearmemory-v1.6-playback-build
+          path: carrier
+          fetch-depth: 0
+
+      - name: Checkout v1.6.5 patch carrier
+        uses: actions/checkout@v4
+        with:
+          ref: wearmemory-v1.6.5-build
+          path: v165
+          fetch-depth: 0
+
+      - name: Checkout final Audio carrier
+        uses: actions/checkout@v4
+        with:
+          ref: wearmemory-audio-localonly-build
+          path: final
+          fetch-depth: 0
+
+      - name: Reconstruct and patch Audio v1.6.9
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat carrier/wearmemory_v1.6_build/source.part1 \
+              carrier/wearmemory_v1.6_build/source.part2 \
+              carrier/wearmemory_v1.6_build/source.part3 \
+              carrier/wearmemory_v1.6_build/source.part4 > /tmp/wm16-source.b64
+          base64 -D -i /tmp/wm16-source.b64 -o /tmp/wm16-source.zip
+          echo '910095e4ad4db56f21d2219483aa4b2faa7b97f20d0f2e7aedaea5f3f9a23029  /tmp/wm16-source.zip' | shasum -a 256 -c -
+          rm -rf /tmp/wm169 /tmp/wm168 /tmp/wm167 && mkdir -p /tmp/wm169
+          unzip -q /tmp/wm16-source.zip -d /tmp/wm169
+
+          base64 -D -i v165/wearmemory_v1.6.5_build/wm165.patch.gz.b64 -o /tmp/wm165.patch.gz
+          gunzip -c /tmp/wm165.patch.gz > /tmp/wm165.patch
+          cd /tmp/wm169
+          patch -p1 < /tmp/wm165.patch
+          WM_AUDIO_ROOT=/tmp/wm169 python3 "$GITHUB_WORKSPACE/final/wearmemory_audio_v166/localonly_patch.py"
+          ln -s /tmp/wm169 /tmp/wm167
+          ln -s /tmp/wm169 /tmp/wm168
+          python3 "$GITHUB_WORKSPACE/final/wearmemory_audio_v167/polish_patch.py"
+          python3 "$GITHUB_WORKSPACE/final/wearmemory_audio_v168/final_audio_patch.py"
+          python3 "$GITHUB_WORKSPACE/final/wearmemory_audio_v168/open_text_patch.py"
+          python3 "$GITHUB_WORKSPACE/final/wearmemory_audio_v169/embedded_metadata_patch.py"
+
+          plutil -lint WearMemory/Info.plist
+          plutil -lint WearMemory/WearMemory.entitlements
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' WearMemory/Info.plist)" = '1.6.9'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' WearMemory/Info.plist)" = '27'
+          grep -F 'group.local.pavel.WearMemory' WearMemory/WearMemory.entitlements
+          grep -F 'wearmemory-text://recording-started' WearMemory/AppModel.swift
+          grep -F 'AudioInboxStaging' WearMemory/AppModel.swift
+          grep -F 'WEARMEMORY_META_V1:' WearMemory/AppModel.swift
+          grep -F 'quickTimeMetadataDescription' WearMemory/AppModel.swift
+          grep -F '"recordingId"' WearMemory/AppModel.swift
+          grep -F '"ipadStatus": "queued"' WearMemory/AppModel.swift
+          ! grep -F 'metaTemp' WearMemory/AppModel.swift
+          ! grep -F 'try data.write(to: metaTemp' WearMemory/AppModel.swift
+          grep -F 'selectedInputUID' WearMemory/AudioBufferManager.swift
+          grep -F 'setPreferredInput' WearMemory/AudioBufferManager.swift
+          grep -F 'AVRoutePickerView' WearMemory/ContentView.swift
+          ! grep -F 'Google Drive' WearMemory/ContentView.swift
+          ! grep -F 'driveSync' WearMemory/AppModel.swift
+
+          cd /tmp/wm169
+          zip -qry /tmp/WearMemory_Audio_v1.6.9_Source.zip WearMemory project.yml
+          unzip -t /tmp/WearMemory_Audio_v1.6.9_Source.zip
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Build arm64 iOS 15 app
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/wm169
+          xcodegen generate
+          xcodebuild \
+            -project WearMemory.xcodeproj \
+            -scheme WearMemory \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            TARGETED_DEVICE_FAMILY=1 \
+            build | tee /tmp/wm169-build.log
+
+      - name: Sign and package TrollStore IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP='/tmp/wm169/build/DerivedData/Build/Products/Release-iphoneos/WearMemory.app'
+          test -d "$APP"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Info.plist")" = '1.6.9'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Info.plist")" = '27'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$APP/Info.plist")" = '15.0'
+          /usr/bin/file "$APP/WearMemory" | grep -F 'arm64'
+          codesign --force --sign - --entitlements /tmp/wm169/WearMemory/WearMemory.entitlements "$APP"
+          codesign --verify --deep --strict "$APP"
+          codesign -d --entitlements :- "$APP" > /tmp/wm169-entitlements.plist 2>&1
+          grep -q 'group.local.pavel.WearMemory' /tmp/wm169-entitlements.plist
+          rm -rf /tmp/wm169-payload
+          mkdir -p /tmp/wm169-payload/Payload
+          ditto "$APP" /tmp/wm169-payload/Payload/WearMemory.app
+          cd /tmp/wm169-payload
+          zip -qry /tmp/WearMemory_Audio_v1.6.9b27_EmbeddedM4A_iOS15.ipa Payload
+          unzip -t /tmp/WearMemory_Audio_v1.6.9b27_EmbeddedM4A_iOS15.ipa
+          shasum -a 256 /tmp/WearMemory_Audio_v1.6.9b27_EmbeddedM4A_iOS15.ipa > /tmp/WearMemory_Audio_v1.6.9b27_EmbeddedM4A_iOS15.ipa.sha256
+
+      - name: Upload verified IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: WearMemory-Audio-v1.6.9-EmbeddedM4A-Ready
+          path: |
+            /tmp/WearMemory_Audio_v1.6.9b27_EmbeddedM4A_iOS15.ipa
+            /tmp/WearMemory_Audio_v1.6.9b27_EmbeddedM4A_iOS15.ipa.sha256
+            /tmp/WearMemory_Audio_v1.6.9_Source.zip
+            /tmp/wm169-entitlements.plist
+            /tmp/wm169-build.log
+          retention-days: 7
