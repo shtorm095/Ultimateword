@@ -108,7 +108,57 @@ final class WhisperEngine {
 
         let model = try modelURL()
 
-        Self.setStage("6A: Context init starten")
+        // Preflight the exact heavy stages independently. If iOS kills the process,
+        // the persisted stage identifies whether Mel or the encoder is responsible.
+        Self.setStage("6A: Diagnose Context init")
+        var preflightContextError: UnsafeMutablePointer<CChar>?
+        let preflightContext = model.path.withCString { modelPath in
+            wm_whisper_create_context(modelPath, &preflightContextError)
+        }
+        if let preflightContextError {
+            let message = String(cString: preflightContextError)
+            wm_whisper_free_string(preflightContextError)
+            throw WhisperEngineError.whisper(message)
+        }
+        guard let preflightContext else { throw WhisperEngineError.whisper("Diagnose Context fehlt") }
+        Self.setStage("6B: Diagnose Context OK")
+
+        Self.setStage("6C: PCM → Mel starten")
+        var melError: UnsafeMutablePointer<CChar>?
+        let melRC: Int32 = samples.withUnsafeBufferPointer { buffer in
+            Int32(wm_whisper_pcm_to_mel(preflightContext, buffer.baseAddress!, Int32(buffer.count), 1, &melError))
+        }
+        if let melError {
+            let message = String(cString: melError)
+            wm_whisper_free_string(melError)
+            wm_whisper_free_context(preflightContext)
+            throw WhisperEngineError.whisper(message)
+        }
+        guard melRC == 0 else {
+            wm_whisper_free_context(preflightContext)
+            throw WhisperEngineError.whisper("PCM→Mel rc=\(melRC)")
+        }
+        Self.setStage("6D: PCM → Mel OK")
+
+        Self.setStage("6E: Encoder starten")
+        var encoderError: UnsafeMutablePointer<CChar>?
+        let encoderRC = Int32(wm_whisper_encode_only(preflightContext, 0, 1, &encoderError))
+        if let encoderError {
+            let message = String(cString: encoderError)
+            wm_whisper_free_string(encoderError)
+            wm_whisper_free_context(preflightContext)
+            throw WhisperEngineError.whisper(message)
+        }
+        guard encoderRC == 0 else {
+            wm_whisper_free_context(preflightContext)
+            throw WhisperEngineError.whisper("Encoder rc=\(encoderRC)")
+        }
+        Self.setStage("6F: Encoder OK")
+        wm_whisper_free_context(preflightContext)
+
+        // Fresh context for the actual transcription. Build 6 uses one thread,
+        // one greedy decoder and no temperature fallback to reduce A10 runtime pressure.
+        Self.setStage("6G: Safe Context init")
         var contextError: UnsafeMutablePointer<CChar>?
         let context = model.path.withCString { modelPath in
             wm_whisper_create_context(modelPath, &contextError)
@@ -118,32 +168,27 @@ final class WhisperEngine {
             wm_whisper_free_string(contextError)
             throw WhisperEngineError.whisper(message)
         }
-        guard let context else {
-            throw WhisperEngineError.whisper("Context init ohne Ergebnis")
-        }
-        Self.setStage("6B: Context init OK")
+        guard let context else { throw WhisperEngineError.whisper("Safe Context fehlt") }
+        Self.setStage("6H: Safe Context OK")
         defer { wm_whisper_free_context(context) }
 
-        Self.setStage("6C: whisper_full starten")
+        Self.setStage("6I: whisper_full Safe starten")
         var elapsed: Double = 0
         var runError: UnsafeMutablePointer<CChar>?
         let rc: Int32 = samples.withUnsafeBufferPointer { buffer in
-            Int32(wm_whisper_run_full(context, buffer.baseAddress!, Int32(buffer.count), 2, &elapsed, &runError))
+            Int32(wm_whisper_run_full(context, buffer.baseAddress!, Int32(buffer.count), 1, &elapsed, &runError))
         }
-        Self.setStage("6D: whisper_full zurück")
+        Self.setStage("6M: whisper_full zurück")
         if let runError {
             let message = String(cString: runError)
             wm_whisper_free_string(runError)
             throw WhisperEngineError.whisper(message)
         }
-        guard rc == 0 else {
-            throw WhisperEngineError.whisper("whisper_full rc=\(rc)")
-        }
+        guard rc == 0 else { throw WhisperEngineError.whisper("whisper_full rc=\(rc)") }
 
-        Self.setStage("6E: Text aus Kontext lesen")
+        Self.setStage("6N: Text aus Kontext lesen")
         var textError: UnsafeMutablePointer<CChar>?
         let resultPointer = wm_whisper_copy_text(context, &textError)
-        Self.setStage("6F: Text aus Kontext zurück")
         if let textError {
             let message = String(cString: textError)
             wm_whisper_free_string(textError)
