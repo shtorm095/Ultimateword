@@ -1,0 +1,30 @@
+name: Inspect AudioBufferManager v1.7.2
+
+on:
+  push:
+    branches: [wearmemory-audio-v1.7.2-saving-fix]
+    paths:
+      - '.github/workflows/inspect-audio-buffer-v172.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reconstruct v1.7.1 source and print recorder logic
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin wearmemory-audio-v1.7.1-result
+          git show origin/wearmemory-audio-v1.7.1-result:artifacts/WearMemoryAudio_v1.7.1_Source.zip > /tmp/audio171.zip
+          rm -rf /tmp/audio171 && mkdir -p /tmp/audio171
+          unzip -q /tmp/audio171.zip -d /tmp/audio171
+          echo '=== SHA256 ==='
+          shasum -a 256 /tmp/audio171/WearMemory/AudioBufferManager.swift
+          echo '=== segment/timer references ==='
+          grep -nE 'segmentDuration|record\(|Timer|asyncAfter|60|180|startNewSegment|audioRecorderDidFinishRecording' /tmp/audio171/WearMemory/AudioBufferManager.swift || true
+          echo '=== full AudioBufferManager.swift ==='
+          cat /tmp/audio171/WearMemory/AudioBufferManager.swift
