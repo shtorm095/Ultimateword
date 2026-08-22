@@ -122,7 +122,7 @@ jobs:
           /usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$APP/Info.plist" | grep -Fx 'WearMemory Whisper'
           /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist" | grep -Fx 'local.pavel.WearMemoryWhisper'
           /usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Info.plist" | grep -Fx '0.1.0'
-          /usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Info.plist" | grep -Fx '1'
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Info.plist" | grep -Fx '2'
           /usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$APP/Info.plist" | grep -Fx '15.0'
           lipo -archs "$APP/WearMemoryWhisper" | grep -w arm64
           test -f "$APP/ggml-base.bin"
@@ -140,22 +140,22 @@ jobs:
           mkdir -p /tmp/wmwhisper-payload/Payload
           ditto "$APP" /tmp/wmwhisper-payload/Payload/WearMemoryWhisper.app
           cd /tmp/wmwhisper-payload
-          zip -qry /tmp/WearMemoryWhisper_v0.1.0b1_Base_German_iOS15.ipa Payload
-          unzip -t /tmp/WearMemoryWhisper_v0.1.0b1_Base_German_iOS15.ipa
-          shasum -a 256 /tmp/WearMemoryWhisper_v0.1.0b1_Base_German_iOS15.ipa > /tmp/WearMemoryWhisper_v0.1.0b1_Base_German_iOS15.ipa.sha256
+          zip -qry /tmp/WearMemoryWhisper_v0.1.0b2_Base_German_iOS15.ipa Payload
+          unzip -t /tmp/WearMemoryWhisper_v0.1.0b2_Base_German_iOS15.ipa
+          shasum -a 256 /tmp/WearMemoryWhisper_v0.1.0b2_Base_German_iOS15.ipa > /tmp/WearMemoryWhisper_v0.1.0b2_Base_German_iOS15.ipa.sha256
 
           cd /tmp/wmwhisper
-          zip -qry /tmp/WearMemoryWhisper_v0.1.0_Source.zip WearMemoryWhisper project.yml
-          unzip -t /tmp/WearMemoryWhisper_v0.1.0_Source.zip
+          zip -qry /tmp/WearMemoryWhisper_v0.1.0b2_Source.zip WearMemoryWhisper project.yml
+          unzip -t /tmp/WearMemoryWhisper_v0.1.0b2_Source.zip
 
       - name: Upload verified IPA
         uses: actions/upload-artifact@v4
         with:
-          name: WearMemoryWhisper-v0.1.0-Base-German-iOS15
+          name: WearMemoryWhisper-v0.1.0b2-Base-German-iOS15
           path: |
-            /tmp/WearMemoryWhisper_v0.1.0b1_Base_German_iOS15.ipa
-            /tmp/WearMemoryWhisper_v0.1.0b1_Base_German_iOS15.ipa.sha256
-            /tmp/WearMemoryWhisper_v0.1.0_Source.zip
+            /tmp/WearMemoryWhisper_v0.1.0b2_Base_German_iOS15.ipa
+            /tmp/WearMemoryWhisper_v0.1.0b2_Base_German_iOS15.ipa.sha256
+            /tmp/WearMemoryWhisper_v0.1.0b2_Source.zip
             /tmp/wmwhisper-build.log
             /tmp/wmwhisper-entitlements.plist
           compression-level: 0
