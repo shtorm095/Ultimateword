@@ -5,6 +5,8 @@ on:
     branches: [wearmemory-audio-v1.7.2-saving-fix]
     paths:
       - '.github/workflows/inspect-audio-buffer-v172.yml'
+  pull_request:
+    branches: [wearmemory-audio-v1.7.1-build]
 
 permissions:
   contents: read
