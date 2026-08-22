@@ -3,6 +3,8 @@ name: Build WearMemory Text v1.2.1 Whisper Production IPA
 on:
   push:
     branches: [ wearmemory-text-whisper-production ]
+  pull_request:
+    branches: [ wearmemory-text-whisper-production ]
   workflow_dispatch:
 
 concurrency:
