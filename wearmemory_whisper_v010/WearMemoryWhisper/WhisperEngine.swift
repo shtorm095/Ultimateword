@@ -1,5 +1,6 @@
 import Foundation
 import AVFoundation
+import AudioToolbox
 
 struct WhisperRunResult {
     let sourceName: String
@@ -31,6 +32,7 @@ enum WhisperEngineError: LocalizedError {
 
 final class WhisperEngine {
     static let appGroup = "group.local.pavel.WearMemory"
+    // whisper.cpp expects PCM at WHISPER_SAMPLE_RATE = 16000 Hz.
     static let targetRate: Double = 16_000
 
     func latestAudioURL() throws -> URL {
@@ -63,6 +65,7 @@ final class WhisperEngine {
         guard let model = Bundle.main.url(forResource: "ggml-base", withExtension: "bin") else {
             throw WhisperEngineError.modelMissing
         }
+
         let (samples, duration) = try decodeTo16kMonoFloat(source)
         guard !samples.isEmpty else { throw WhisperEngineError.audioConvert("0 Samples") }
 
@@ -88,7 +91,6 @@ final class WhisperEngine {
         let outputDir = root.appendingPathComponent("WhisperText", isDirectory: true)
         try FileManager.default.createDirectory(at: outputDir, withIntermediateDirectories: true)
         let output = outputDir.appendingPathComponent(source.deletingPathExtension().lastPathComponent + ".txt")
-        // Idempotent local result: same M4A always overwrites the same TXT, never creates duplicates.
         try (text + (text.isEmpty ? "" : "\n")).write(to: output, atomically: true, encoding: .utf8)
 
         return WhisperRunResult(
@@ -100,68 +102,82 @@ final class WhisperEngine {
         )
     }
 
+    // iOS 15 build 2: use ExtAudioFile instead of AVAudioConverter's pull callback.
+    // ExtAudioFile lets AudioToolbox decode AAC/M4A and resample directly to the exact
+    // PCM format whisper.cpp requires: Float32, mono, 16 kHz.
     private func decodeTo16kMonoFloat(_ url: URL) throws -> ([Float], Double) {
-        let file: AVAudioFile
-        do { file = try AVAudioFile(forReading: url) }
-        catch { throw WhisperEngineError.audioOpen(error.localizedDescription) }
+        var fileRef: ExtAudioFileRef?
+        var status = ExtAudioFileOpenURL(url as CFURL, &fileRef)
+        guard status == noErr, let fileRef else {
+            throw WhisperEngineError.audioOpen(osStatusDescription(status))
+        }
+        defer { ExtAudioFileDispose(fileRef) }
 
-        guard let outputFormat = AVAudioFormat(
-            commonFormat: .pcmFormatFloat32,
-            sampleRate: Self.targetRate,
-            channels: 1,
-            interleaved: false
-        ) else { throw WhisperEngineError.audioConvert("Zielformat 16 kHz mono nicht verfügbar") }
+        var clientFormat = AudioStreamBasicDescription(
+            mSampleRate: Self.targetRate,
+            mFormatID: kAudioFormatLinearPCM,
+            mFormatFlags: kAudioFormatFlagsNativeFloatPacked,
+            mBytesPerPacket: UInt32(MemoryLayout<Float>.size),
+            mFramesPerPacket: 1,
+            mBytesPerFrame: UInt32(MemoryLayout<Float>.size),
+            mChannelsPerFrame: 1,
+            mBitsPerChannel: 32,
+            mReserved: 0
+        )
 
-        let inputFormat = file.processingFormat
-        guard let converter = AVAudioConverter(from: inputFormat, to: outputFormat) else {
-            throw WhisperEngineError.audioConvert("AVAudioConverter konnte nicht erstellt werden")
+        status = withUnsafePointer(to: &clientFormat) { ptr in
+            ExtAudioFileSetProperty(
+                fileRef,
+                kExtAudioFileProperty_ClientDataFormat,
+                UInt32(MemoryLayout<AudioStreamBasicDescription>.size),
+                ptr
+            )
+        }
+        guard status == noErr else {
+            throw WhisperEngineError.audioConvert("ClientDataFormat: \(osStatusDescription(status))")
         }
 
-        let outputCapacity: AVAudioFrameCount = 16_000 * 10
-        var result: [Float] = []
-        var reachedEOF = false
-        var conversionError: Error?
+        let chunkFrames: UInt32 = 16_000 * 5
+        var chunk = [Float](repeating: 0, count: Int(chunkFrames))
+        var samples: [Float] = []
+        samples.reserveCapacity(Int(Self.targetRate * 180))
 
-        while !reachedEOF {
-            guard let outBuffer = AVAudioPCMBuffer(pcmFormat: outputFormat, frameCapacity: outputCapacity) else {
-                throw WhisperEngineError.audioConvert("Ausgabepuffer konnte nicht erstellt werden")
+        while true {
+            var frames = chunkFrames
+            status = chunk.withUnsafeMutableBytes { rawBuffer in
+                var audioBuffer = AudioBuffer(
+                    mNumberChannels: 1,
+                    mDataByteSize: UInt32(rawBuffer.count),
+                    mData: rawBuffer.baseAddress
+                )
+                var bufferList = AudioBufferList(mNumberBuffers: 1, mBuffers: audioBuffer)
+                return ExtAudioFileRead(fileRef, &frames, &bufferList)
             }
 
-            var localError: NSError?
-            let status = converter.convert(to: outBuffer, error: &localError) { packetCount, outStatus in
-                let inputCapacity = max(1024, packetCount)
-                guard let inBuffer = AVAudioPCMBuffer(pcmFormat: inputFormat, frameCapacity: inputCapacity) else {
-                    outStatus.pointee = .noDataNow
-                    return nil
-                }
-                do {
-                    try file.read(into: inBuffer, frameCount: inputCapacity)
-                    if inBuffer.frameLength == 0 {
-                        reachedEOF = true
-                        outStatus.pointee = .endOfStream
-                        return nil
-                    }
-                    outStatus.pointee = .haveData
-                    return inBuffer
-                } catch {
-                    conversionError = error
-                    reachedEOF = true
-                    outStatus.pointee = .endOfStream
-                    return nil
-                }
+            guard status == noErr else {
+                throw WhisperEngineError.audioConvert("ExtAudioFileRead: \(osStatusDescription(status))")
             }
-
-            if let localError { throw WhisperEngineError.audioConvert(localError.localizedDescription) }
-            if let conversionError { throw WhisperEngineError.audioConvert(conversionError.localizedDescription) }
-
-            if outBuffer.frameLength > 0, let channel = outBuffer.floatChannelData?[0] {
-                result.append(contentsOf: UnsafeBufferPointer(start: channel, count: Int(outBuffer.frameLength)))
-            }
-            if status == .error { throw WhisperEngineError.audioConvert("AVAudioConverter Status error") }
-            if status == .endOfStream { reachedEOF = true }
+            if frames == 0 { break }
+            samples.append(contentsOf: chunk.prefix(Int(frames)))
         }
 
-        let duration = Double(result.count) / Self.targetRate
-        return (result, duration)
+        return (samples, Double(samples.count) / Self.targetRate)
+    }
+
+    private func osStatusDescription(_ status: OSStatus) -> String {
+        if status == noErr { return "noErr" }
+
+        let value = UInt32(bitPattern: status)
+        let chars: [UInt8] = [
+            UInt8((value >> 24) & 0xff),
+            UInt8((value >> 16) & 0xff),
+            UInt8((value >> 8) & 0xff),
+            UInt8(value & 0xff)
+        ]
+        let printable = chars.allSatisfy { $0 >= 32 && $0 <= 126 }
+        if printable, let fourCC = String(bytes: chars, encoding: .ascii) {
+            return "OSStatus \(status) ('\(fourCC)')"
+        }
+        return "OSStatus \(status)"
     }
 }
