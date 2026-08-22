@@ -26,6 +26,10 @@ source = source.replace(
 source = source.replace("grep -Fx '1.2.1'", "grep -Fx '1.2.4'")
 source = source.replace("grep -Fx '21'", "grep -Fx '24'")
 source = source.replace(
+    "grep -Fq 'WhisperLocalRecognizer.transcribe(url: sourceURL)' \"$SRC/TextProcessor.swift\"",
+    "grep -Fq 'WhisperLocalRecognizer.transcribe(url: sourceURL, model: .base)' \"$SRC/TextProcessor.swift\"",
+)
+source = source.replace(
     "grep -Fq 'Whisper Base · Deutsch · offline' \"$SRC/TextProcessor.swift\"",
     "grep -Fq 'Whisper Small Q5_1 · 2/2' \"$SRC/TextProcessor.swift\"",
 )
