@@ -1,0 +1,1 @@
+Trigger 30-second chunked Whisper production validation.
