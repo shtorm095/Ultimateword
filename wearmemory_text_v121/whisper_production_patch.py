@@ -90,4 +90,8 @@ if old not in p:
 p = p.replace(old, new, 1)
 processor.write_text(p)
 
-print('patched WearMemory Text 1.2.1 chunked Whisper: 30s chunks + progress')
+saving_patch = Path(__file__).with_name("saving_contract_patch.py")
+saving_code = saving_patch.read_text()
+exec(compile(saving_code, str(saving_patch), 'exec'), {'__file__': str(saving_patch), '__name__': '__main__'})
+
+print('patched WearMemory Text 1.2.1: chunked Whisper + strict one-M4A-one-TXT saving')
