@@ -107,24 +107,52 @@ final class WhisperEngine {
         Self.setStage("3: Audio-Konvertierung OK")
 
         let model = try modelURL()
-        Self.setStage("6: Whisper Kontext + whisper_full starten")
 
-        var elapsed: Double = 0
-        var errorPointer: UnsafeMutablePointer<CChar>?
-        let resultPointer: UnsafePointer<CChar>? = model.path.withCString { modelPath in
-            samples.withUnsafeBufferPointer { buffer in
-                wm_whisper_transcribe(modelPath, buffer.baseAddress!, Int32(buffer.count), 2, &elapsed, &errorPointer)
-            }
+        Self.setStage("6A: Context init starten")
+        var contextError: UnsafeMutablePointer<CChar>?
+        let context = model.path.withCString { modelPath in
+            wm_whisper_create_context(modelPath, &contextError)
         }
-        if let errorPointer {
-            let message = String(cString: errorPointer)
-            wm_whisper_free_string(errorPointer)
+        if let contextError {
+            let message = String(cString: contextError)
+            wm_whisper_free_string(contextError)
+            throw WhisperEngineError.whisper(message)
+        }
+        guard let context else {
+            throw WhisperEngineError.whisper("Context init ohne Ergebnis")
+        }
+        Self.setStage("6B: Context init OK")
+        defer { wm_whisper_free_context(context) }
+
+        Self.setStage("6C: whisper_full starten")
+        var elapsed: Double = 0
+        var runError: UnsafeMutablePointer<CChar>?
+        let rc: Int32 = samples.withUnsafeBufferPointer { buffer in
+            Int32(wm_whisper_run_full(context, buffer.baseAddress!, Int32(buffer.count), 2, &elapsed, &runError))
+        }
+        Self.setStage("6D: whisper_full zurück")
+        if let runError {
+            let message = String(cString: runError)
+            wm_whisper_free_string(runError)
+            throw WhisperEngineError.whisper(message)
+        }
+        guard rc == 0 else {
+            throw WhisperEngineError.whisper("whisper_full rc=\(rc)")
+        }
+
+        Self.setStage("6E: Text aus Kontext lesen")
+        var textError: UnsafeMutablePointer<CChar>?
+        let resultPointer = wm_whisper_copy_text(context, &textError)
+        Self.setStage("6F: Text aus Kontext zurück")
+        if let textError {
+            let message = String(cString: textError)
+            wm_whisper_free_string(textError)
             throw WhisperEngineError.whisper(message)
         }
         guard let resultPointer else { throw WhisperEngineError.whisper("kein Ergebnis") }
-        Self.setStage("7: Whisper fertig")
         let text = String(cString: resultPointer).trimmingCharacters(in: .whitespacesAndNewlines)
         wm_whisper_free_string(resultPointer)
+        Self.setStage("7: Whisper fertig")
 
         guard let root = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: Self.appGroup) else { throw WhisperEngineError.noSharedContainer }
         let outputDir = root.appendingPathComponent("WhisperText", isDirectory: true)
