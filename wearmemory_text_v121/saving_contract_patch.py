@@ -48,7 +48,7 @@ replacement = r'''    private func writeSegmentText(sourceURL: URL, text: String
     }
 
 '''
-p, count = pattern.subn(replacement, p, count=1)
+p, count = pattern.subn(lambda _: replacement, p, count=1)
 if count != 1:
     raise SystemExit(f'writeSegmentText replacement count={count}')
 
