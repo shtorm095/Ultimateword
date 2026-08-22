@@ -16,6 +16,10 @@ struct AudioProbeResult {
     let sampleCount: Int
 }
 
+struct ModelProbeResult {
+    let loadSeconds: Double
+}
+
 enum WhisperEngineError: LocalizedError {
     case noSharedContainer, noAudio, modelMissing
     case audioOpen(String), audioConvert(String), whisper(String)
@@ -45,6 +49,13 @@ final class WhisperEngine {
         UserDefaults.standard.string(forKey: stageKey) ?? "Noch kein Lauf"
     }
 
+    private func modelURL() throws -> URL {
+        guard let model = Bundle.main.url(forResource: "ggml-base", withExtension: "bin") else {
+            throw WhisperEngineError.modelMissing
+        }
+        return model
+    }
+
     func latestAudioURL() throws -> URL {
         Self.setStage("1: AudioInbox suchen")
         guard let root = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: Self.appGroup) else { throw WhisperEngineError.noSharedContainer }
@@ -67,6 +78,26 @@ final class WhisperEngine {
         return AudioProbeResult(sourceName: source.lastPathComponent, audioSeconds: duration, sampleCount: samples.count)
     }
 
+    func probeModelLoad() throws -> ModelProbeResult {
+        let model = try modelURL()
+        Self.setStage("4: Base-Ladetest startet")
+        var elapsed: Double = 0
+        var errorPointer: UnsafeMutablePointer<CChar>?
+        let rc: Int32 = model.path.withCString { modelPath in
+            Int32(wm_whisper_test_model(modelPath, &elapsed, &errorPointer))
+        }
+        if let errorPointer {
+            let message = String(cString: errorPointer)
+            wm_whisper_free_string(errorPointer)
+            throw WhisperEngineError.whisper(message)
+        }
+        guard rc == 0 else {
+            throw WhisperEngineError.whisper("Base-Ladetest rc=\(rc)")
+        }
+        Self.setStage("5: Base laden/freigeben OK")
+        return ModelProbeResult(loadSeconds: elapsed)
+    }
+
     func transcribeLatest() throws -> WhisperRunResult { try transcribe(latestAudioURL()) }
 
     func transcribe(_ source: URL) throws -> WhisperRunResult {
@@ -75,12 +106,11 @@ final class WhisperEngine {
         guard !samples.isEmpty else { throw WhisperEngineError.audioConvert("0 Samples") }
         Self.setStage("3: Audio-Konvertierung OK")
 
-        guard let model = Bundle.main.url(forResource: "ggml-base", withExtension: "bin") else { throw WhisperEngineError.modelMissing }
-        Self.setStage("4: Whisper Base laden")
+        let model = try modelURL()
+        Self.setStage("6: Whisper Kontext + whisper_full starten")
 
         var elapsed: Double = 0
         var errorPointer: UnsafeMutablePointer<CChar>?
-        Self.setStage("5: whisper_full starten")
         let resultPointer: UnsafePointer<CChar>? = model.path.withCString { modelPath in
             samples.withUnsafeBufferPointer { buffer in
                 wm_whisper_transcribe(modelPath, buffer.baseAddress!, Int32(buffer.count), 2, &elapsed, &errorPointer)
@@ -92,7 +122,7 @@ final class WhisperEngine {
             throw WhisperEngineError.whisper(message)
         }
         guard let resultPointer else { throw WhisperEngineError.whisper("kein Ergebnis") }
-        Self.setStage("6: Whisper fertig")
+        Self.setStage("7: Whisper fertig")
         let text = String(cString: resultPointer).trimmingCharacters(in: .whitespacesAndNewlines)
         wm_whisper_free_string(resultPointer)
 
@@ -101,7 +131,7 @@ final class WhisperEngine {
         try FileManager.default.createDirectory(at: outputDir, withIntermediateDirectories: true)
         let output = outputDir.appendingPathComponent(source.deletingPathExtension().lastPathComponent + ".txt")
         try (text + (text.isEmpty ? "" : "\n")).write(to: output, atomically: true, encoding: .utf8)
-        Self.setStage("7: TXT gespeichert")
+        Self.setStage("8: TXT gespeichert")
         return WhisperRunResult(sourceName: source.lastPathComponent, text: text, audioSeconds: duration, processingSeconds: elapsed, outputURL: output)
     }
 
