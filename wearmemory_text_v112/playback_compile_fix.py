@@ -1,0 +1,9 @@
+from pathlib import Path
+
+p = Path('/tmp/wmtext112-src/WearMemoryText/ContentView.swift')
+s = p.read_text()
+s = s.replace('let d = (try? AVAudioPlayer(contentsOf: url).duration) ?? 0', 'let d = (try? AVAudioPlayer(contentsOf: url))?.duration ?? 0')
+s = s.replace('@MainActor\nprivate final class AudioInboxPlayer', 'private final class AudioInboxPlayer')
+s = s.replace('''    nonisolated func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {\n        Task { @MainActor in\n            self.currentTime = self.duration\n            self.isPlaying = false\n            self.stopTimer()\n        }\n    }\n''','''    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {\n        DispatchQueue.main.async {\n            self.currentTime = self.duration\n            self.isPlaying = false\n            self.stopTimer()\n        }\n    }\n''')
+s = s.replace('''        timer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in\n            Task { @MainActor in\n                guard let self = self, let player = self.player else { return }\n                self.currentTime = player.currentTime\n                self.duration = player.duration\n                self.isPlaying = player.isPlaying\n                self.outputRouteName = AVAudioSession.sharedInstance().currentRoute.outputs.first?.portName\n            }\n        }\n''','''        timer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in\n            guard let self = self, let player = self.player else { return }\n            self.currentTime = player.currentTime\n            self.duration = player.duration\n            self.isPlaying = player.isPlaying\n            self.outputRouteName = AVAudioSession.sharedInstance().currentRoute.outputs.first?.portName\n        }\n''')
+p.write_text(s)
