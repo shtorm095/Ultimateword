@@ -3,7 +3,6 @@
 #include <chrono>
 #include <cstring>
 #include <string>
-#include <thread>
 
 static char *wm_copy_string(const std::string &value) {
     char *out = (char *)malloc(value.size() + 1);
@@ -58,20 +57,19 @@ void *wm_whisper_create_context(const char *modelPath,
     return (void *)ctx;
 }
 
-const char *wm_whisper_transcribe_context(void *context,
-                                          const float *samples,
-                                          int sampleCount,
-                                          int threads,
-                                          double *elapsedSeconds,
-                                          char **errorOut) {
+int wm_whisper_run_full(void *context,
+                        const float *samples,
+                        int sampleCount,
+                        int threads,
+                        double *elapsedSeconds,
+                        char **errorOut) {
     if (errorOut) *errorOut = nullptr;
     if (!context || !samples || sampleCount <= 0) {
         if (errorOut) *errorOut = wm_copy_string("Ungültiger Kontext oder Audiodaten");
-        return nullptr;
+        return -1;
     }
 
     whisper_context *ctx = (whisper_context *)context;
-
     whisper_full_params params = whisper_full_default_params(WHISPER_SAMPLING_GREEDY);
     params.print_realtime = false;
     params.print_progress = false;
@@ -95,9 +93,20 @@ const char *wm_whisper_transcribe_context(void *context,
 
     if (rc != 0) {
         if (errorOut) *errorOut = wm_copy_string("Whisper konnte das Audio nicht verarbeiten");
+        return rc;
+    }
+    return 0;
+}
+
+const char *wm_whisper_copy_text(void *context,
+                                 char **errorOut) {
+    if (errorOut) *errorOut = nullptr;
+    if (!context) {
+        if (errorOut) *errorOut = wm_copy_string("Ungültiger Whisper-Kontext");
         return nullptr;
     }
 
+    whisper_context *ctx = (whisper_context *)context;
     std::string result;
     const int count = whisper_full_n_segments(ctx);
     for (int i = 0; i < count; ++i) {
