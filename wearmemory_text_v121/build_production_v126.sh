@@ -28,7 +28,7 @@ source = source.replace("grep -Fx '1.2.1'\", \"grep -Fx '1.2.4'", "grep -Fx '1.2
 source = source.replace("grep -Fx '21'\", \"grep -Fx '24'", "grep -Fx '21'\", \"grep -Fx '26'")
 source = source.replace(
     "new_ipa = 'WearMemoryText_v1.2.4b24_Base_SmallQ5_1_DualPass_DEElektro_iOS15'",
-    "new_ipa = 'WearMemoryText_v1.2.6b26_Base_SmallQ5_1_DualPass_Background_NoDeadline_DEElektro_iOS15'",
+    "new_ipa = 'WearMemoryText_v1.2.6b26_Base_SmallQ5_1_DualPass_Background_9MinuteWatchdog_DEElektro_iOS15'",
 )
 source = source.replace(
     "source = source.replace('WearMemoryText_v1.2.1_Source.zip', 'WearMemoryText_v1.2.4_Source.zip')",
