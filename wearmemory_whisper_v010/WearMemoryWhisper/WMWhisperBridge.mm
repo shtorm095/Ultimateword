@@ -38,21 +38,15 @@ int wm_whisper_test_model(const char *modelPath,
         return -2;
     }
 
-    // Important: this diagnostic deliberately does nothing except load and free the model.
-    // No audio, no whisper_full, no decoder work.
     whisper_free(ctx);
     return 0;
 }
 
-const char *wm_whisper_transcribe(const char *modelPath,
-                                  const float *samples,
-                                  int sampleCount,
-                                  int threads,
-                                  double *elapsedSeconds,
-                                  char **errorOut) {
+void *wm_whisper_create_context(const char *modelPath,
+                                char **errorOut) {
     if (errorOut) *errorOut = nullptr;
-    if (!modelPath || !samples || sampleCount <= 0) {
-        if (errorOut) *errorOut = wm_copy_string("Ungültige Audio- oder Modelldaten");
+    if (!modelPath) {
+        if (errorOut) *errorOut = wm_copy_string("Ungültiger Modellpfad");
         return nullptr;
     }
 
@@ -61,6 +55,22 @@ const char *wm_whisper_transcribe(const char *modelPath,
         if (errorOut) *errorOut = wm_copy_string("Whisper-Modell konnte nicht geladen werden");
         return nullptr;
     }
+    return (void *)ctx;
+}
+
+const char *wm_whisper_transcribe_context(void *context,
+                                          const float *samples,
+                                          int sampleCount,
+                                          int threads,
+                                          double *elapsedSeconds,
+                                          char **errorOut) {
+    if (errorOut) *errorOut = nullptr;
+    if (!context || !samples || sampleCount <= 0) {
+        if (errorOut) *errorOut = wm_copy_string("Ungültiger Kontext oder Audiodaten");
+        return nullptr;
+    }
+
+    whisper_context *ctx = (whisper_context *)context;
 
     whisper_full_params params = whisper_full_default_params(WHISPER_SAMPLING_GREEDY);
     params.print_realtime = false;
@@ -84,7 +94,6 @@ const char *wm_whisper_transcribe(const char *modelPath,
     }
 
     if (rc != 0) {
-        whisper_free(ctx);
         if (errorOut) *errorOut = wm_copy_string("Whisper konnte das Audio nicht verarbeiten");
         return nullptr;
     }
@@ -95,11 +104,14 @@ const char *wm_whisper_transcribe(const char *modelPath,
         const char *text = whisper_full_get_segment_text(ctx, i);
         if (text) result += text;
     }
-    whisper_free(ctx);
 
     while (!result.empty() && (result.front() == ' ' || result.front() == '\n' || result.front() == '\t')) result.erase(result.begin());
     while (!result.empty() && (result.back() == ' ' || result.back() == '\n' || result.back() == '\t')) result.pop_back();
     return wm_copy_string(result);
+}
+
+void wm_whisper_free_context(void *context) {
+    if (context) whisper_free((whisper_context *)context);
 }
 
 void wm_whisper_free_string(const char *value) {
