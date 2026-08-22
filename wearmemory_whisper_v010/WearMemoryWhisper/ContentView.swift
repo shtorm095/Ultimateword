@@ -22,7 +22,8 @@ struct ContentView: View {
                             row("Sprache", "Deutsch (de)")
                             row("Verarbeitung", "100 % offline")
                             row("Threads", "1 (A10 Safe)")
-                            row("Build", "6")
+                            row("Backend", "CPU ohne BLAS/Accelerate")
+                            row("Build", "7")
                         }.frame(maxWidth: .infinity, alignment: .leading)
                     }
 
