@@ -1,0 +1,34 @@
+name: WearMemory Text 1.2.5 Background Whisper
+
+on:
+  pull_request:
+    branches: [ wearmemory-text-v124-dualpass-base-small ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build WearMemory Text 1.2.5
+        shell: bash
+        run: bash wearmemory_text_v121/build_production_v125.sh
+
+      - name: Upload verified 1.2.5 IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: WearMemoryText-v1.2.5-Base-SmallQ5_1-DualPass-Background-DEElektro-iOS15
+          path: |
+            /tmp/WearMemoryText_v1.2.5b25_Base_SmallQ5_1_DualPass_Background_DEElektro_iOS15.ipa
+            /tmp/WearMemoryText_v1.2.5b25_Base_SmallQ5_1_DualPass_Background_DEElektro_iOS15.ipa.sha256
+            /tmp/WearMemoryText_v1.2.5_Source.zip
+            /tmp/wmtext121-entitlements.plist
+            /tmp/wmtext121-build.log
+          compression-level: 0
+          retention-days: 7
