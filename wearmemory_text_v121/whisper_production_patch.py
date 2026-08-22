@@ -1,6 +1,5 @@
 from pathlib import Path
 import re
-import subprocess
 
 source = Path(__file__).with_name("whisper_production_patch_original.py")
 code = source.read_text()
@@ -21,7 +20,6 @@ root = Path('/tmp/wmtext121-src')
 app = root / 'WearMemoryText'
 recognizer = app / 'WhisperLocalRecognizer.swift'
 processor = app / 'TextProcessor.swift'
-info = app / 'Info.plist'
 
 r = recognizer.read_text()
 start = r.index('    static func transcribe(url: URL) throws -> String {')
@@ -33,8 +31,6 @@ chunked = r'''    static func transcribe(url: URL, progress: ((Int, Int) -> Void
             throw WhisperLocalRecognizerError.modelMissing
         }
 
-        // Keep every native whisper_full call short on the A10/iOS 15 target.
-        // The diagnostic build was validated with short audio; production files can be 3 minutes.
         let chunkSampleCount = Int(targetRate * 30.0)
         let totalChunks = max(1, Int(ceil(Double(samples.count) / Double(chunkSampleCount))))
         var parts: [String] = []
@@ -94,7 +90,4 @@ if old not in p:
 p = p.replace(old, new, 1)
 processor.write_text(p)
 
-subprocess.run(['/usr/libexec/PlistBuddy', '-c', 'Set :CFBundleShortVersionString 1.2.2', str(info)], check=True)
-subprocess.run(['/usr/libexec/PlistBuddy', '-c', 'Set :CFBundleVersion 22', str(info)], check=True)
-
-print('patched WearMemory Text 1.2.2: Whisper Base CPU NoBLAS, 30s chunks + progress')
+print('patched WearMemory Text 1.2.1 chunked Whisper: 30s chunks + progress')
