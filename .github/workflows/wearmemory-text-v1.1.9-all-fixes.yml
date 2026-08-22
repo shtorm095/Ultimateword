@@ -86,13 +86,13 @@ jobs:
           grep -q 'if activeItemID == itemID { activeItemID = nil }' "$SRC/TextProcessor.swift"
 
           # Drive: one logical source name -> one stable pending id and exact-name preflight.
-          grep -q 'id: "text:\\(sourceURL.lastPathComponent)"' "$SRC/TextDriveSync.swift"
-          grep -q 'id: "audio:\\(audioURL.lastPathComponent)"' "$SRC/TextDriveSync.swift"
+          grep -Fq 'id: "text:\(sourceURL.lastPathComponent)"' "$SRC/TextDriveSync.swift"
+          grep -Fq 'id: "audio:\(audioURL.lastPathComponent)"' "$SRC/TextDriveSync.swift"
           ! grep -q 'id: "text:.*UUID().uuidString' "$SRC/TextDriveSync.swift"
           grep -q 'normalizedPendingQueue' "$SRC/TextDriveSync.swift"
           grep -q 'scheduleIdempotentUpload' "$SRC/TextDriveSync.swift"
           grep -q 'findRemoteFileID' "$SRC/TextDriveSync.swift"
-          grep -q "name = '\\(escaped)'" "$SRC/TextDriveSync.swift"
+          grep -Fq "name = '\(escaped)'" "$SRC/TextDriveSync.swift"
           ! grep -q 'Google Drive не вернул file id для TXT' "$SRC/TextDriveSync.swift"
           grep -q 'descriptor.operation == .createText,' "$SRC/TextDriveSync.swift"
 
