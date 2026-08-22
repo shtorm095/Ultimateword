@@ -7,6 +7,10 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+concurrency:
+  group: wearmemory-whisper-ios15-build4
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
