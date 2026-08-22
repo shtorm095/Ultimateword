@@ -12,59 +12,42 @@ for path in (processor, content, info):
 
 p = processor.read_text()
 
-# Remove the obsolete whole-file 3-minute watchdog. It predates the current
-# Base -> Small full-file dual pass and can abort a healthy local Whisper job.
-for old in (
-    '    private var fileDeadlineWorkItem: DispatchWorkItem?\n',
-    '    private let maxFileProcessingSeconds: TimeInterval = 180\n',
-):
-    if old not in p:
-        raise SystemExit(f'expected deadline property not found: {old!r}')
-    p = p.replace(old, '', 1)
+# The old 3-minute whole-file watchdog is too short for Base -> Small full-file dual pass.
+# Keep the safety watchdog, but extend it to 9 minutes (540 seconds).
+old = '    private let maxFileProcessingSeconds: TimeInterval = 180\n'
+new = '    private let maxFileProcessingSeconds: TimeInterval = 540\n'
+if old not in p:
+    raise SystemExit('180-second file deadline not found')
+p = p.replace(old, new, 1)
 
-old_deinit = '    deinit { currentTask?.cancel(); currentTask = nil; currentRecognizer = nil; currentRequest = nil; retryWorkItem?.cancel(); fileDeadlineWorkItem?.cancel() }\n'
-new_deinit = '    deinit { currentTask?.cancel(); currentTask = nil; currentRecognizer = nil; currentRequest = nil; retryWorkItem?.cancel() }\n'
-if old_deinit not in p:
-    raise SystemExit('deadline deinit marker not found')
-p = p.replace(old_deinit, new_deinit, 1)
+old = '            publishStatus("Распознаю \\(item.sourceFileName) · лимит 3 мин")\n'
+new = '            publishStatus("Распознаю \\(item.sourceFileName) · лимит 9 мин")\n'
+if old not in p:
+    raise SystemExit('3-minute processing status not found')
+p = p.replace(old, new, 1)
 
-for old in (
-    '            startFileDeadline(item: item, sourceURL: sourceURL)\n',
-    '            publishStatus("Распознаю \\(item.sourceFileName) · лимит 3 мин")\n',
-):
-    if old not in p:
-        raise SystemExit(f'processing deadline marker not found: {old!r}')
-    p = p.replace(old, '', 1)
+old = 'Общий лимит обработки на iPod: 3 минуты'
+new = 'Общий лимит обработки на iPod: 9 минут'
+if old not in p:
+    raise SystemExit('3-minute deadline error text not found')
+p = p.replace(old, new, 1)
 
-start = p.find('    private func startFileDeadline(item: TextQueueItem, sourceURL: URL) {')
-end_marker = '    private let wearMemoryMetadataPrefix = "WEARMEMORY_META_V1:"\n'
-end = p.find(end_marker, start)
-if start < 0 or end < 0:
-    raise SystemExit('deadline function block not found')
-p = p[:start] + end_marker + p[end + len(end_marker):]
-
-# Terminal paths no longer need to cancel a file deadline.
-p = p.replace('        stopFileDeadline()\n', '')
-
-for forbidden in (
-    'maxFileProcessingSeconds',
-    'fileDeadlineWorkItem',
-    'startFileDeadline(',
-    'stopFileDeadline()',
-    'Общий лимит обработки на iPod: 3 минуты',
-    'лимит 3 мин',
-):
-    if forbidden in p:
-        raise SystemExit(f'deadline residue remains in TextProcessor.swift: {forbidden}')
+if 'maxFileProcessingSeconds: TimeInterval = 180' in p:
+    raise SystemExit('180-second deadline residue remains')
+if 'лимит 3 мин' in p or '3 минуты' in p:
+    raise SystemExit('3-minute deadline text residue remains in TextProcessor.swift')
+if 'maxFileProcessingSeconds: TimeInterval = 540' not in p:
+    raise SystemExit('540-second deadline missing')
 processor.write_text(p)
 
 c = content.read_text()
-ui_line = '                info("timer", "Лимит файла", "3 минуты", .cyan)\n'
-if ui_line not in c:
+old = '                info("timer", "Лимит файла", "3 минуты", .cyan)\n'
+new = '                info("timer", "Лимит файла", "9 минут", .cyan)\n'
+if old not in c:
     raise SystemExit('3-minute UI row not found')
-c = c.replace(ui_line, '', 1)
-if 'Лимит файла' in c or '3 минуты' in c:
-    raise SystemExit('3-minute UI residue remains')
+c = c.replace(old, new, 1)
+if 'Лимит файла", "9 минут"' not in c:
+    raise SystemExit('9-minute UI row missing')
 content.write_text(c)
 
 with info.open('rb') as f:
@@ -74,4 +57,4 @@ plist['CFBundleVersion'] = '26'
 with info.open('wb') as f:
     plistlib.dump(plist, f, fmt=plistlib.FMT_XML, sort_keys=False)
 
-print('patched WearMemory Text 1.2.6: removed obsolete 3-minute whole-file deadline')
+print('patched WearMemory Text 1.2.6: file watchdog extended from 3 to 9 minutes')
