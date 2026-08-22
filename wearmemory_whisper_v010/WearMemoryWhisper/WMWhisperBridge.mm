@@ -11,10 +11,31 @@ static char *wm_copy_string(const std::string &value) {
     return out;
 }
 
+static void wm_persist_stage(NSString *value) {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setObject:value forKey:@"WMWhisperLastStage"];
+    [defaults synchronize];
+}
+
 static whisper_context_params wm_context_params() {
     whisper_context_params cparams = whisper_context_default_params();
     cparams.use_gpu = false;
     return cparams;
+}
+
+static bool wm_encoder_begin_callback(struct whisper_context *, struct whisper_state *, void *) {
+    wm_persist_stage(@"6K: whisper_full Encoder startet");
+    return true;
+}
+
+static void wm_progress_callback(struct whisper_context *, struct whisper_state *, int progress, void *) {
+    if (progress == 0) {
+        wm_persist_stage(@"6J: whisper_full Hauptloop gestartet");
+    }
+}
+
+static void wm_new_segment_callback(struct whisper_context *, struct whisper_state *, int, void *) {
+    wm_persist_stage(@"6L: Decoder Segment erzeugt");
 }
 
 int wm_whisper_test_model(const char *modelPath,
@@ -57,6 +78,37 @@ void *wm_whisper_create_context(const char *modelPath,
     return (void *)ctx;
 }
 
+int wm_whisper_pcm_to_mel(void *context,
+                          const float *samples,
+                          int sampleCount,
+                          int threads,
+                          char **errorOut) {
+    if (errorOut) *errorOut = nullptr;
+    if (!context || !samples || sampleCount <= 0) {
+        if (errorOut) *errorOut = wm_copy_string("Ungültiger Kontext oder Audiodaten");
+        return -1;
+    }
+    whisper_context *ctx = (whisper_context *)context;
+    const int rc = whisper_pcm_to_mel(ctx, samples, sampleCount, threads > 0 ? threads : 1);
+    if (rc != 0 && errorOut) *errorOut = wm_copy_string("PCM → Mel fehlgeschlagen");
+    return rc;
+}
+
+int wm_whisper_encode_only(void *context,
+                           int offset,
+                           int threads,
+                           char **errorOut) {
+    if (errorOut) *errorOut = nullptr;
+    if (!context) {
+        if (errorOut) *errorOut = wm_copy_string("Ungültiger Whisper-Kontext");
+        return -1;
+    }
+    whisper_context *ctx = (whisper_context *)context;
+    const int rc = whisper_encode(ctx, offset, threads > 0 ? threads : 1);
+    if (rc != 0 && errorOut) *errorOut = wm_copy_string("Whisper Encoder fehlgeschlagen");
+    return rc;
+}
+
 int wm_whisper_run_full(void *context,
                         const float *samples,
                         int sampleCount,
@@ -77,12 +129,21 @@ int wm_whisper_run_full(void *context,
     params.print_special = false;
     params.translate = false;
     params.language = "de";
-    params.n_threads = threads > 0 ? threads : 2;
+    params.n_threads = threads > 0 ? threads : 1;
     params.offset_ms = 0;
     params.no_context = true;
-    params.single_segment = false;
+    params.single_segment = true;
     params.no_timestamps = true;
     params.suppress_blank = true;
+
+    // A10-safe baseline: no fallback fan-out and only one greedy decoder.
+    // This does not change the model weights or language; it only reduces runtime work/memory.
+    params.greedy.best_of = 1;
+    params.temperature_inc = 0.0f;
+
+    params.progress_callback = wm_progress_callback;
+    params.encoder_begin_callback = wm_encoder_begin_callback;
+    params.new_segment_callback = wm_new_segment_callback;
 
     const auto started = std::chrono::steady_clock::now();
     const int rc = whisper_full(ctx, params, samples, sampleCount);
