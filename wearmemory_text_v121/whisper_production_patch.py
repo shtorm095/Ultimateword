@@ -98,4 +98,8 @@ german_patch = Path(__file__).with_name("german_domain_patch.py")
 german_code = german_patch.read_text()
 exec(compile(german_code, str(german_patch), 'exec'), {'__file__': str(german_patch), '__name__': '__main__'})
 
-print('patched WearMemory Text 1.2.1: saving contract + German technical correction + token confidence')
+speaker_patch = Path(__file__).with_name("speaker_diarization_patch.py")
+speaker_code = speaker_patch.read_text()
+exec(compile(speaker_code, str(speaker_patch), 'exec'), {'__file__': str(speaker_patch), '__name__': '__main__'})
+
+print('patched WearMemory Text 1.2.1: saving contract + German technical correction + token confidence + conservative speaker separation')
