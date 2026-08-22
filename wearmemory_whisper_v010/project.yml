@@ -18,7 +18,7 @@ targets:
         SWIFT_OBJC_BRIDGING_HEADER: WearMemoryWhisper/WMWhisper-Bridging-Header.h
         HEADER_SEARCH_PATHS: "$(SRCROOT)/VendorHeaders"
         LIBRARY_SEARCH_PATHS: "$(SRCROOT)/VendorLib"
-        OTHER_LDFLAGS: "-lwmwhisper -lc++ -framework Accelerate"
+        OTHER_LDFLAGS: "-lwmwhisper -lc++"
         IPHONEOS_DEPLOYMENT_TARGET: "15.0"
         TARGETED_DEVICE_FAMILY: "1,2"
         SWIFT_VERSION: "5.0"
@@ -26,6 +26,5 @@ targets:
         CLANG_CXX_LIBRARY: "libc++"
     dependencies:
       - sdk: AVFoundation.framework
-      - sdk: Accelerate.framework
       - sdk: CoreMedia.framework
       - sdk: AudioToolbox.framework
