@@ -8,43 +8,44 @@ struct ContentView: View {
     @State private var processingTime = "—"
     @State private var outputName = "—"
     @State private var isRunning = false
+    @State private var lastStage = WhisperEngine.lastStage()
 
     private let engine = WhisperEngine()
 
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 14) {
                     GroupBox(label: Text("Lokales Whisper")) {
                         VStack(alignment: .leading, spacing: 8) {
                             row("Modell", "Whisper Base")
                             row("Sprache", "Deutsch (de)")
                             row("Verarbeitung", "100 % offline")
                             row("Threads", "2")
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                            row("Build", "3")
+                        }.frame(maxWidth: .infinity, alignment: .leading)
                     }
 
-                    Button(action: run) {
+                    Button(action: testAudio) {
+                        Text("1. M4A / 16 kHz testen").frame(maxWidth: .infinity).padding(.vertical, 8)
+                    }.buttonStyle(.borderedProminent).disabled(isRunning)
+
+                    Button(action: runWhisper) {
                         HStack {
                             if isRunning { ProgressView().padding(.trailing, 6) }
-                            Text(isRunning ? "Verarbeitung läuft…" : "Letzte M4A erkennen")
-                                .frame(maxWidth: .infinity)
-                        }
-                        .padding(.vertical, 10)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(isRunning)
+                            Text("2. Whisper erkennen").frame(maxWidth: .infinity)
+                        }.padding(.vertical, 8)
+                    }.buttonStyle(.borderedProminent).disabled(isRunning)
 
-                    GroupBox(label: Text("Status")) {
+                    GroupBox(label: Text("Diagnose")) {
                         VStack(alignment: .leading, spacing: 7) {
                             Text(status).font(.headline)
+                            row("Letzte Stufe", lastStage)
                             row("Quelle", sourceName)
                             row("Audio", audioTime)
                             row("Whisper", processingTime)
                             row("TXT", outputName)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                        }.frame(maxWidth: .infinity, alignment: .leading)
                     }
 
                     GroupBox(label: Text("Erkannter Text")) {
@@ -52,15 +53,14 @@ struct ContentView: View {
                             .textSelection(.enabled)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                }
-                .padding()
+                }.padding()
             }
             .navigationTitle("WearMemory Whisper")
+            .onAppear { lastStage = WhisperEngine.lastStage() }
         }
     }
 
-    @ViewBuilder
-    private func row(_ title: String, _ value: String) -> some View {
+    @ViewBuilder private func row(_ title: String, _ value: String) -> some View {
         HStack(alignment: .top) {
             Text(title + ":").foregroundColor(.secondary)
             Spacer(minLength: 8)
@@ -68,31 +68,43 @@ struct ContentView: View {
         }
     }
 
-    private func run() {
-        isRunning = true
-        status = "M4A → 16 kHz Mono → Whisper…"
-        transcript = ""
-        sourceName = "—"
-        audioTime = "—"
-        processingTime = "—"
-        outputName = "—"
+    private func resetRun() {
+        isRunning = true; transcript = ""; sourceName = "—"; audioTime = "—"; processingTime = "—"; outputName = "—"
+    }
 
+    private func testAudio() {
+        resetRun(); status = "Teste M4A → 16 kHz Mono…"
         DispatchQueue.global(qos: .userInitiated).async {
             do {
-                let result = try engine.transcribeLatest()
+                let r = try engine.probeLatestAudio()
                 DispatchQueue.main.async {
-                    sourceName = result.sourceName
-                    audioTime = String(format: "%.1f s", result.audioSeconds)
-                    processingTime = String(format: "%.1f s", result.processingSeconds)
-                    outputName = result.outputURL.lastPathComponent
-                    transcript = result.text
-                    status = result.text.isEmpty ? "Fertig, aber kein Text erkannt" : "Fertig"
+                    sourceName = r.sourceName
+                    audioTime = String(format: "%.1f s / %d Samples", r.audioSeconds, r.sampleCount)
+                    lastStage = WhisperEngine.lastStage()
+                    status = "Audio-Konvertierung OK"
                     isRunning = false
                 }
             } catch {
                 DispatchQueue.main.async {
-                    status = "Fehler: \(error.localizedDescription)"
-                    isRunning = false
+                    lastStage = WhisperEngine.lastStage(); status = "Fehler: \(error.localizedDescription)"; isRunning = false
+                }
+            }
+        }
+    }
+
+    private func runWhisper() {
+        resetRun(); status = "Whisper läuft…"
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                let r = try engine.transcribeLatest()
+                DispatchQueue.main.async {
+                    sourceName = r.sourceName; audioTime = String(format: "%.1f s", r.audioSeconds)
+                    processingTime = String(format: "%.1f s", r.processingSeconds); outputName = r.outputURL.lastPathComponent
+                    transcript = r.text; lastStage = WhisperEngine.lastStage(); status = r.text.isEmpty ? "Fertig, kein Text" : "Fertig"; isRunning = false
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    lastStage = WhisperEngine.lastStage(); status = "Fehler: \(error.localizedDescription)"; isRunning = false
                 }
             }
         }
