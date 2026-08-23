@@ -1,4 +1,4 @@
-name: WearMemory Text 1.2.6 9-Minute Watchdog + Delete Clean Audio
+name: WearMemory Text 1.2.6 9-Minute Watchdog + Small Quality Gate
 
 on:
   pull_request:
@@ -23,7 +23,7 @@ jobs:
       - name: Upload verified 1.2.6 IPA
         uses: actions/upload-artifact@v4
         with:
-          name: WearMemoryText-v1.2.6-Base-SmallQ5_1-DualPass-Background-9MinuteWatchdog-DeleteCleanAudio-DEElektro-iOS15
+          name: WearMemoryText-v1.2.6-Base-SmallQ5_1-DualPass-Background-9MinuteWatchdog-SmallQualityGate-DEElektro-iOS15
           path: |
             /tmp/WearMemoryText_v1.2.6b26_Base_SmallQ5_1_DualPass_Background_9MinuteWatchdog_DeleteCleanAudio_DEElektro_iOS15.ipa
             /tmp/WearMemoryText_v1.2.6b26_Base_SmallQ5_1_DualPass_Background_9MinuteWatchdog_DeleteCleanAudio_DEElektro_iOS15.ipa.sha256
