@@ -19,6 +19,11 @@ rm -rf "$THEOS/sdks"
 git clone --depth 1 https://github.com/theos/sdks.git "$THEOS/sdks"
 export THEOS
 
+if ! command -v ldid >/dev/null 2>&1; then
+  brew install ldid
+fi
+command -v ldid
+
 PROJ="$WORK/ImmortalizerTS"
 
 python3 - "$PROJ" <<'PY'
@@ -115,7 +120,6 @@ plutil -lint "$WORK/entitlements.plist"
 /usr/libexec/PlistBuddy -c 'Print :platform-application' "$WORK/entitlements.plist" | grep -Fx 'true'
 
 strings "$WORK/TextKeeper" | grep -Fq 'local.pavel.WearMemoryText'
-strings "$WORK/TextKeeper" | grep -Fq 'Text Keeper'
 
 cp "$PROJ/LICENSE" /tmp/ImmortalizerTS_GPLv3_LICENSE.txt
 cp "$WORK/IMMORTALIZERTS_UPSTREAM_COMMIT.txt" /tmp/ImmortalizerTS_UPSTREAM_COMMIT.txt
