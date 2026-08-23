@@ -3,14 +3,15 @@
 #import <spawn.h>
 #import <sys/wait.h>
 #import <unistd.h>
+#import <string.h>
 
-extern char **environ;
 #ifndef POSIX_SPAWN_PERSONA_FLAGS_OVERRIDE
 #define POSIX_SPAWN_PERSONA_FLAGS_OVERRIDE 1
 #endif
 extern int posix_spawnattr_set_persona_np(posix_spawnattr_t *attr, uid_t persona_id, uint32_t flags);
 extern int posix_spawnattr_set_persona_uid_np(posix_spawnattr_t *attr, uid_t uid);
 extern int posix_spawnattr_set_persona_gid_np(posix_spawnattr_t *attr, gid_t gid);
+extern int WearMemoryPatchHelperMain(int argc, char *argv[]);
 
 static int SpawnRoot(NSString *path, NSArray<NSString *> *arguments) {
     NSMutableArray<NSString *> *all = [NSMutableArray arrayWithObject:path];
@@ -26,7 +27,7 @@ static int SpawnRoot(NSString *path, NSArray<NSString *> *arguments) {
     posix_spawnattr_set_persona_gid_np(&attr, 0);
 
     pid_t pid = 0;
-    int spawnResult = posix_spawn(&pid, path.fileSystemRepresentation, NULL, &attr, argv, environ);
+    int spawnResult = posix_spawn(&pid, path.fileSystemRepresentation, NULL, &attr, argv, NULL);
     posix_spawnattr_destroy(&attr);
     for (NSUInteger i = 0; i < all.count; i++) free(argv[i]);
     free(argv);
@@ -104,6 +105,7 @@ static int SpawnRoot(NSString *path, NSArray<NSString *> *arguments) {
         case 27: return @"Не удалось записать новый код. Выполнен откат.";
         case 28: return @"TrollStore не смог повторно подписать Text. Выполнен откат.";
         case 29: return @"Проверка после установки не прошла. Выполнен откат.";
+        case 1209: return @"Корневой процесс был остановлен iOS (SIGKILL). Эта сборка патчера несовместима с данным способом запуска.";
         default: return [NSString stringWithFormat:@"Ошибка установки: %d", code];
     }
 }
@@ -111,10 +113,10 @@ static int SpawnRoot(NSString *path, NSArray<NSString *> *arguments) {
 - (void)installPatch {
     self.installButton.enabled = NO;
     self.statusLabel.text = @"Устанавливаю…";
-    NSString *helper = [[NSBundle mainBundle] pathForResource:@"patchhelper" ofType:nil];
+    NSString *helper = NSBundle.mainBundle.executablePath;
     NSString *bundlePath = NSBundle.mainBundle.bundlePath;
     if (!helper) {
-        self.statusLabel.text = @"patchhelper отсутствует";
+        self.statusLabel.text = @"Исполняемый файл патчера не найден";
         self.installButton.enabled = YES;
         return;
     }
@@ -143,6 +145,9 @@ static int SpawnRoot(NSString *path, NSArray<NSString *> *arguments) {
 
 int main(int argc, char * argv[]) {
     @autoreleasepool {
+        if (argc >= 2 && strcmp(argv[1], "apply") == 0) {
+            return WearMemoryPatchHelperMain(argc, argv);
+        }
         return UIApplicationMain(argc, argv, nil, NSStringFromClass(AppDelegate.class));
     }
 }
