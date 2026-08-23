@@ -126,9 +126,11 @@ grep -Fq 'case activeTimeout' "$SRC/WhisperLocalRecognizer.swift"
 grep -Fq 'activeBudgetSeconds: maxFileProcessingSeconds' "$SRC/TextProcessor.swift"
 grep -Fq 'maxFileProcessingSeconds - baseTranscript.activeSeconds' "$SRC/TextProcessor.swift"
 grep -Fq '9 минут работы' "$SRC/ContentView.swift"
+# macOS strings is ASCII-oriented; verify the ASCII timeout marker in the final
+# Mach-O and verify the Unicode Russian user-facing reason directly in source.
 strings "$APP/WearMemoryText" > /tmp/wm129-strings.txt
 grep -Fq 'Aktives 9-Minuten-Limit erreicht' /tmp/wm129-strings.txt
-grep -Fq 'Общий лимит активной обработки на iPod: 9 минут' /tmp/wm129-strings.txt
+grep -Fq 'Общий лимит активной обработки на iPod: 9 минут' "$SRC/WhisperLocalRecognizer.swift"
 
 python3 - "$SRC/TextProcessor.swift" <<'PY'
 from pathlib import Path
