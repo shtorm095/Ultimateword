@@ -1,4 +1,4 @@
-name: WearMemory Text 1.2.7 TrollStore Install Patch v5
+name: WearMemory Text 1.2.7 TrollStore Install Patch v6
 
 on:
   pull_request:
@@ -17,18 +17,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build small TrollStore patch IPA v5
+      - name: Build small TrollStore patch IPA v6
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash wearmemory_text_patch127/build_patch_ipa.sh
 
-      - name: Upload patch IPA v5
+      - name: Upload patch IPA v6
         uses: actions/upload-artifact@v4
         with:
-          name: WearMemoryText-1.2.7-TrollStore-InstallPatch-v5-RunningBoard-iOS15
+          name: WearMemoryText-1.2.7-TrollStore-InstallPatch-v6-RunningBoard-iOS15
           path: |
-            /tmp/WearMemoryText_1.2.7_InstallPatch_v5_RunningBoard_TrollStore_iOS15.ipa
-            /tmp/WearMemoryText_1.2.7_InstallPatch_v5_RunningBoard_TrollStore_iOS15.ipa.sha256
+            /tmp/WearMemoryText_1.2.7_InstallPatch_v6_RunningBoard_TrollStore_iOS15.ipa
+            /tmp/WearMemoryText_1.2.7_InstallPatch_v6_RunningBoard_TrollStore_iOS15.ipa.sha256
           compression-level: 0
           retention-days: 7
