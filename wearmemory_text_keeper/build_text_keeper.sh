@@ -15,6 +15,7 @@ printf '%s\n' "$UPSTREAM_SHA" > "$WORK/IMMORTALIZERTS_UPSTREAM_COMMIT.txt"
 
 # Theos + SDKs are used because the upstream app links private iOS frameworks.
 git clone --recursive --depth 1 https://github.com/theos/theos.git "$THEOS"
+rm -rf "$THEOS/sdks"
 git clone --depth 1 https://github.com/theos/sdks.git "$THEOS/sdks"
 export THEOS
 
