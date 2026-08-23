@@ -17,13 +17,16 @@ unzip -p "$FULL_IPA" 'Payload/WearMemoryText.app/WearMemoryText' > "$WORK/target
 test "$(stat -f%z "$WORK/target-executable")" = "2671760"
 echo '68fd375feda10389c46cb62388f75c7f200f68522fe63fb3555b8d6c65fa5d61  '"$WORK/target-executable" | shasum -a 256 -c -
 
-# Verify that the payload really carries the RunningBoard entitlement strings
-# before hiding it inside the patch IPA.
+# Verify the exact signed entitlements on the executable that will be patched in.
+codesign -d --entitlements :- "$WORK/target-executable" > "$WORK/target-entitlements.plist" 2>/dev/null
+plutil -lint "$WORK/target-entitlements.plist"
+/usr/libexec/PlistBuddy -c 'Print :com.apple.runningboard.primitiveattribute' "$WORK/target-entitlements.plist" | grep -Fx 'true'
+/usr/libexec/PlistBuddy -c 'Print :com.apple.runningboard.assertions.frontboard' "$WORK/target-entitlements.plist" | grep -Fx 'true'
+/usr/libexec/PlistBuddy -c 'Print :com.apple.runningboard.process-state' "$WORK/target-entitlements.plist" | grep -Fx 'true'
+/usr/libexec/PlistBuddy -c 'Print :platform-application' "$WORK/target-entitlements.plist" | grep -Fx 'true'
 strings "$WORK/target-executable" > "$WORK/target-strings.txt"
-grep -Fq 'com.apple.runningboard.primitiveattribute' "$WORK/target-strings.txt"
-grep -Fq 'com.apple.runningboard.assertions.frontboard' "$WORK/target-strings.txt"
-grep -Fq 'com.apple.runningboard.process-state' "$WORK/target-strings.txt"
 grep -Fq 'RunningBoardServices.framework/RunningBoardServices' "$WORK/target-strings.txt"
+grep -Fq 'RBSLegacyAttribute' "$WORK/target-strings.txt"
 
 python3 - "$WORK/target-executable" "$WORK/target-executable.xor" <<'PY'
 from pathlib import Path
@@ -137,7 +140,8 @@ shasum -a 256 "$OUT" > "$OUT.sha256"
 
 ! unzip -l "$OUT" | grep -q 'ggml-base.bin'
 ! unzip -l "$OUT" | grep -q 'ggml-small-q5_1.bin'
-unzip -l "$OUT" | grep -q 'Payload/WearMemoryTextPatch127.app/patchhelper'
+unzip -l "$OUT" > "$WORK/ipa-list.txt"
+grep -Fq 'Payload/WearMemoryTextPatch127.app/patchhelper' "$WORK/ipa-list.txt"
 SIZE=$(stat -f%z "$OUT")
 test "$SIZE" -lt 10000000
 printf 'Patch IPA v5 size: %s bytes\n' "$SIZE"
