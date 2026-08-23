@@ -11,8 +11,8 @@ static NSString *const ClassicTrollStoreID = @"com.opa334.TrollStore";
 static NSString *const LiteTrollStoreID = @"com.opa334.TrollStoreLite";
 static const unsigned long long BaseModelSize = 147951465ULL;
 static const unsigned long long SmallModelSize = 190085487ULL;
-static const unsigned long long PayloadExecutableSize = 2671760ULL;
-static NSString *const BackupDir = @"/private/var/mobile/Library/WearMemoryTextPatch127Backup";
+static const unsigned long long PayloadExecutableSize = 2672240ULL;
+static NSString *const BackupDir = @"/private/var/mobile/Library/WearMemoryTextPatch128Backup";
 
 static NSString *FindApp(NSString *bundleID) {
     NSFileManager *fm = NSFileManager.defaultManager;
@@ -42,7 +42,7 @@ static BOOL VersionAtLeast21(NSString *version) {
 
 static BOOL CopyReplacing(NSString *source, NSString *dest) {
     NSFileManager *fm = NSFileManager.defaultManager;
-    NSString *tmp = [dest stringByAppendingString:@".wm127tmp"];
+    NSString *tmp = [dest stringByAppendingString:@".wm128tmp"];
     [fm removeItemAtPath:tmp error:nil];
     NSError *error = nil;
     if (![fm copyItemAtPath:source toPath:tmp error:&error]) return NO;
@@ -139,7 +139,7 @@ int main(int argc, char *argv[]) {
 
         if (!EnsureBackup(target)) return 26;
 
-        NSString *decoded = [@"/private/var/tmp" stringByAppendingPathComponent:[NSString stringWithFormat:@"wm127-%@", NSUUID.UUID.UUIDString]];
+        NSString *decoded = [@"/private/var/tmp" stringByAppendingPathComponent:[NSString stringWithFormat:@"wm128-%@", NSUUID.UUID.UUIDString]];
         if (!DecodePayload(encoded, decoded)) return 23;
         chmod(decoded.fileSystemRepresentation, 0755);
 
@@ -155,8 +155,8 @@ int main(int argc, char *argv[]) {
         NSString *infoPath = [target stringByAppendingPathComponent:@"Info.plist"];
         NSMutableDictionary *info = [[NSDictionary dictionaryWithContentsOfFile:infoPath] mutableCopy];
         if (!info) { RestoreBackup(target, classicOwned ? @"_TrollStore" : @"_TrollStoreLite", classicOwned ? @"_TrollStoreLite" : @"_TrollStore"); return 27; }
-        info[@"CFBundleShortVersionString"] = @"1.2.7";
-        info[@"CFBundleVersion"] = @"27";
+        info[@"CFBundleShortVersionString"] = @"1.2.8";
+        info[@"CFBundleVersion"] = @"28";
         NSMutableArray *modes = [info[@"UIBackgroundModes"] mutableCopy];
         if (modes) {
             [modes removeObject:@"audio"];
@@ -181,7 +181,7 @@ int main(int argc, char *argv[]) {
         NSString *patched = FindApp(TargetBundleID);
         if (!patched) return RollbackAndReturn(target, activeMarker, inactiveMarker, 30);
         NSDictionary *patchedInfo = [NSDictionary dictionaryWithContentsOfFile:[patched stringByAppendingPathComponent:@"Info.plist"]];
-        BOOL versionOK = [patchedInfo[@"CFBundleShortVersionString"] isEqualToString:@"1.2.7"] && [patchedInfo[@"CFBundleVersion"] isEqualToString:@"27"];
+        BOOL versionOK = [patchedInfo[@"CFBundleShortVersionString"] isEqualToString:@"1.2.8"] && [patchedInfo[@"CFBundleVersion"] isEqualToString:@"28"];
         if (!versionOK) return RollbackAndReturn(patched, activeMarker, inactiveMarker, 31);
 
         BOOL noAudioMode = ![patchedInfo[@"UIBackgroundModes"] containsObject:@"audio"];
@@ -193,7 +193,6 @@ int main(int argc, char *argv[]) {
         // TrollStore's transfer-apps re-signs the main Mach-O. The code-signature
         // region is allowed to change size, so the post-sign executable must NOT
         // be compared byte-for-byte or by exact file length with the payload.
-        // Check that a plausible, executable Mach-O remains instead.
         NSString *patchedExec = [patched stringByAppendingPathComponent:@"WearMemoryText"];
         unsigned long long patchedExecSize = FileSize(patchedExec);
         BOOL execOK = [fm isExecutableFileAtPath:patchedExec] && patchedExecSize > 2500000ULL && patchedExecSize < 3000000ULL;
