@@ -15,8 +15,14 @@ printf '%s\n' "$UPSTREAM_SHA" > "$WORK/IMMORTALIZERTS_UPSTREAM_COMMIT.txt"
 
 # Theos + SDKs are used because the upstream app links private iOS frameworks.
 git clone --recursive --depth 1 https://github.com/theos/theos.git "$THEOS"
+rm -rf "$THEOS/sdks"
 git clone --depth 1 https://github.com/theos/sdks.git "$THEOS/sdks"
 export THEOS
+
+if ! command -v ldid >/dev/null 2>&1; then
+  brew install ldid
+fi
+command -v ldid
 
 PROJ="$WORK/ImmortalizerTS"
 
@@ -92,8 +98,8 @@ cp "$PKG" "$OUT"
 
 # Verify the package itself rather than trusting a successful compile.
 unzip -t "$OUT"
-APP_PATH=$(unzip -Z1 "$OUT" | awk '/^Payload\/[^/]+\.app\/$/{print; exit}')
-test -n "$APP_PATH"
+APP_PATH='Payload/ImmortalizerTS.app/'
+unzip -Z1 "$OUT" | grep -Fx "${APP_PATH}Info.plist"
 unzip -p "$OUT" "${APP_PATH}Info.plist" > "$WORK/Info.plist"
 plutil -lint "$WORK/Info.plist"
 /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$WORK/Info.plist" | grep -Fx 'local.pavel.WearMemoryTextKeeper'
@@ -106,15 +112,15 @@ EXE_NAME=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$WORK/Info.pl
 unzip -p "$OUT" "${APP_PATH}${EXE_NAME}" > "$WORK/TextKeeper"
 chmod +x "$WORK/TextKeeper"
 file "$WORK/TextKeeper" | grep -q 'arm64'
-codesign -d --entitlements :- "$WORK/TextKeeper" > "$WORK/entitlements.plist" 2>/dev/null
+ldid -e "$WORK/TextKeeper" > "$WORK/entitlements.plist"
 plutil -lint "$WORK/entitlements.plist"
 /usr/libexec/PlistBuddy -c 'Print :com.apple.frontboard.launchapplications' "$WORK/entitlements.plist" | grep -Fx 'true'
 /usr/libexec/PlistBuddy -c 'Print :com.apple.runningboard.launchprocess' "$WORK/entitlements.plist" | grep -Fx 'true'
 /usr/libexec/PlistBuddy -c 'Print :com.apple.runningboard.targetidentities' "$WORK/entitlements.plist" | grep -Fx 'true'
 /usr/libexec/PlistBuddy -c 'Print :platform-application' "$WORK/entitlements.plist" | grep -Fx 'true'
 
-strings "$WORK/TextKeeper" | grep -Fq 'local.pavel.WearMemoryText'
-strings "$WORK/TextKeeper" | grep -Fq 'Text Keeper'
+strings "$WORK/TextKeeper" > "$WORK/TextKeeper.strings"
+grep -Fq 'local.pavel.WearMemoryText' "$WORK/TextKeeper.strings"
 
 cp "$PROJ/LICENSE" /tmp/ImmortalizerTS_GPLv3_LICENSE.txt
 cp "$WORK/IMMORTALIZERTS_UPSTREAM_COMMIT.txt" /tmp/ImmortalizerTS_UPSTREAM_COMMIT.txt
