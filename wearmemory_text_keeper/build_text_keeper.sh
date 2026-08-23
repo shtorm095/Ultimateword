@@ -119,7 +119,8 @@ plutil -lint "$WORK/entitlements.plist"
 /usr/libexec/PlistBuddy -c 'Print :com.apple.runningboard.targetidentities' "$WORK/entitlements.plist" | grep -Fx 'true'
 /usr/libexec/PlistBuddy -c 'Print :platform-application' "$WORK/entitlements.plist" | grep -Fx 'true'
 
-strings "$WORK/TextKeeper" | grep -Fq 'local.pavel.WearMemoryText'
+strings "$WORK/TextKeeper" > "$WORK/TextKeeper.strings"
+grep -Fq 'local.pavel.WearMemoryText' "$WORK/TextKeeper.strings"
 
 cp "$PROJ/LICENSE" /tmp/ImmortalizerTS_GPLv3_LICENSE.txt
 cp "$WORK/IMMORTALIZERTS_UPSTREAM_COMMIT.txt" /tmp/ImmortalizerTS_UPSTREAM_COMMIT.txt
