@@ -19,7 +19,8 @@ new_patch = '''    + 'python3 "$ROOT/wearmemory_text_v121/german_confidence_patc
     + 'python3 "$ROOT/wearmemory_text_v121/dual_pass_base_small_patch.py"\\n'
     + 'python3 "$ROOT/wearmemory_text_v121/background_processing_patch.py"\\n'
     + 'python3 "$ROOT/wearmemory_text_v121/no_file_deadline_patch.py"\\n'
-    + 'python3 "$ROOT/wearmemory_text_v121/delete_successful_audio_patch.py"\\n',
+    + 'python3 "$ROOT/wearmemory_text_v121/delete_successful_audio_patch.py"\\n'
+    + 'python3 "$ROOT/wearmemory_text_v121/small_quality_gate_patch.py"\\n',
 '''
 if old_patch not in source:
     raise SystemExit('v1.2.4 patch chain marker not found')
