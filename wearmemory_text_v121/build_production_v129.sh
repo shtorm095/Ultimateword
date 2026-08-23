@@ -29,6 +29,14 @@ source = source.replace(old_patch, new_patch, 1)
 
 source = source.replace("grep -Fx '1.2.1'\", \"grep -Fx '1.2.4'", "grep -Fx '1.2.1'\", \"grep -Fx '1.2.9'")
 source = source.replace("grep -Fx '21'\", \"grep -Fx '24'", "grep -Fx '21'\", \"grep -Fx '29'")
+
+# v1.2.4 verified the old one-line dual-pass call. v1.2.9 deliberately
+# changes that API to pass the shared active-work budget.
+source = source.replace(
+    'WhisperLocalRecognizer.transcribe(url: sourceURL, model: .base)',
+    'activeBudgetSeconds: maxFileProcessingSeconds',
+)
+
 source = source.replace(
     "new_ipa = 'WearMemoryText_v1.2.4b24_Base_SmallQ5_1_DualPass_DEElektro_iOS15'",
     "new_ipa = 'WearMemoryText_v1.2.9b29_Base_SmallQ5_1_TextKeeper_Active9MinuteWatchdog_DEElektro_iOS15'",
