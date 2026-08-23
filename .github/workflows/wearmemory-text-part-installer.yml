@@ -1,0 +1,26 @@
+name: WearMemory Text Part Installer
+
+on:
+  push:
+    branches:
+      - wearmemory-text-part-installer
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Text Installer
+        run: bash wearmemory_text_installer/build_text_installer.sh
+
+      - name: Upload Text Installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Text-Installer-1.0-TrollStore-iOS15
+          path: |
+            /tmp/Text_Installer_1.0_TrollStore_iOS15.tipa
+            /tmp/Text_Installer_1.0_TrollStore_iOS15.tipa.sha256
+          if-no-files-found: error
