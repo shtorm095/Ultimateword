@@ -1,0 +1,36 @@
+name: WearMemory Text Keeper FrontBoard
+
+on:
+  push:
+    branches: [ wearmemory-text-v127-runningboard-background ]
+    paths:
+      - 'wearmemory_text_keeper/**'
+      - '.github/workflows/wearmemory-text-keeper-frontboard.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Text Keeper
+        shell: bash
+        run: bash wearmemory_text_keeper/build_text_keeper.sh
+
+      - name: Upload verified Text Keeper
+        uses: actions/upload-artifact@v4
+        with:
+          name: WearMemory-Text-Keeper-FrontBoard-TrollStore-iOS15
+          path: |
+            /tmp/WearMemory_Text_Keeper_FrontBoard_TrollStore_iOS15.tipa
+            /tmp/WearMemory_Text_Keeper_FrontBoard_TrollStore_iOS15.tipa.sha256
+            /tmp/ImmortalizerTS_GPLv3_LICENSE.txt
+            /tmp/ImmortalizerTS_UPSTREAM_COMMIT.txt
+          compression-level: 0
+          retention-days: 7
