@@ -1,8 +1,8 @@
-name: WearMemory Text Keeper FrontBoard
+name: WearMemory Text Keeper v2 Auto FrontBoard
 
 on:
   push:
-    branches: [ wearmemory-text-v127-runningboard-background ]
+    branches: [ wearmemory-text-v129-keeper-watchdog-fix ]
     paths:
       - 'wearmemory_text_keeper/**'
       - '.github/workflows/wearmemory-text-keeper-frontboard.yml'
@@ -21,17 +21,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build Text Keeper
+      - name: Build and verify Text Keeper v2
         shell: bash
         run: bash wearmemory_text_keeper/build_text_keeper.sh
 
-      - name: Upload verified Text Keeper
+      - name: Upload verified Text Keeper v2
         uses: actions/upload-artifact@v4
         with:
-          name: WearMemory-Text-Keeper-FrontBoard-TrollStore-iOS15
+          name: WearMemory-Text-Keeper-v2-Auto-FrontBoard-TrollStore-iOS15
           path: |
-            /tmp/WearMemory_Text_Keeper_FrontBoard_TrollStore_iOS15.tipa
-            /tmp/WearMemory_Text_Keeper_FrontBoard_TrollStore_iOS15.tipa.sha256
+            /tmp/WearMemory_Text_Keeper_v2_Auto_FrontBoard_TrollStore_iOS15.tipa
+            /tmp/WearMemory_Text_Keeper_v2_Auto_FrontBoard_TrollStore_iOS15.tipa.sha256
             /tmp/ImmortalizerTS_GPLv3_LICENSE.txt
             /tmp/ImmortalizerTS_UPSTREAM_COMMIT.txt
           compression-level: 0
