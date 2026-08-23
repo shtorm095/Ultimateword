@@ -98,8 +98,8 @@ cp "$PKG" "$OUT"
 
 # Verify the package itself rather than trusting a successful compile.
 unzip -t "$OUT"
-APP_PATH=$(unzip -Z1 "$OUT" | awk '/^Payload\/[^/]+\.app\/$/{print; exit}')
-test -n "$APP_PATH"
+APP_PATH='Payload/ImmortalizerTS.app/'
+unzip -Z1 "$OUT" | grep -Fx "${APP_PATH}Info.plist"
 unzip -p "$OUT" "${APP_PATH}Info.plist" > "$WORK/Info.plist"
 plutil -lint "$WORK/Info.plist"
 /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$WORK/Info.plist" | grep -Fx 'local.pavel.WearMemoryTextKeeper'
