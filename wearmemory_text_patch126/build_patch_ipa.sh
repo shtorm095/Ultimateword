@@ -33,7 +33,7 @@ SDK=$(xcrun --sdk iphoneos --show-sdk-path)
 APP="$WORK/Payload/WearMemoryTextPatch.app"
 
 # Compile the patch logic into the app's own Mach-O. The UI process then spawns this
-# already-trusted app executable as root, matching TrollStore's embedded-root-helper pattern.
+# already-trusted app executable as root.
 xcrun --sdk iphoneos clang -arch arm64 -miphoneos-version-min=15.0 -fobjc-arc -isysroot "$SDK" \
   -framework Foundation -Dmain=WearMemoryPatchHelperMain -c \
   "$ROOT/wearmemory_text_patch126/patchhelper.m" -o "$WORK/patchhelper.o"
@@ -54,10 +54,10 @@ cat > "$APP/Info.plist" <<'PLIST'
 <key>CFBundleExecutable</key><string>WearMemoryTextPatch</string>
 <key>CFBundleIdentifier</key><string>local.pavel.WearMemoryTextPatch126</string>
 <key>CFBundleName</key><string>Text Patch</string>
-<key>CFBundleDisplayName</key><string>Text 1.2.6 Patch v2</string>
+<key>CFBundleDisplayName</key><string>Text 1.2.6 Patch v3</string>
 <key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>1.1</string>
-<key>CFBundleVersion</key><string>2</string>
+<key>CFBundleShortVersionString</key><string>1.2</string>
+<key>CFBundleVersion</key><string>3</string>
 <key>MinimumOSVersion</key><string>15.0</string>
 <key>LSRequiresIPhoneOS</key><true/>
 <key>UIDeviceFamily</key><array><integer>1</integer><integer>2</integer></array>
@@ -74,6 +74,7 @@ cat > "$WORK/patcher.entitlements" <<'PLIST'
 <key>com.apple.developer.team-identifier</key><string>TROLLTROLL</string>
 <key>get-task-allow</key><true/>
 <key>keychain-access-groups</key><array><string>TROLLTROLL.*</string><string>com.apple.token</string></array>
+<key>platform-application</key><true/>
 <key>com.apple.private.security.no-sandbox</key><true/>
 <key>com.apple.private.persona-mgmt</key><true/>
 <key>com.apple.private.security.storage.AppDataContainers</key><true/>
@@ -82,8 +83,15 @@ PLIST
 
 codesign --force --sign - --entitlements "$WORK/patcher.entitlements" "$APP"
 codesign --verify --deep --strict "$APP"
+codesign -d --entitlements :- "$APP" > "$WORK/final-entitlements.plist" 2>/dev/null
+plutil -lint "$WORK/final-entitlements.plist"
+/usr/libexec/PlistBuddy -c 'Print :platform-application' "$WORK/final-entitlements.plist" | grep -Fx 'true'
+/usr/libexec/PlistBuddy -c 'Print :com.apple.private.persona-mgmt' "$WORK/final-entitlements.plist" | grep -Fx 'true'
+/usr/libexec/PlistBuddy -c 'Print :com.apple.private.security.no-sandbox' "$WORK/final-entitlements.plist" | grep -Fx 'true'
+/usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$APP/Info.plist" | grep -Fx '15.0'
+file "$APP/WearMemoryTextPatch" | grep -q 'arm64'
 
-OUT=/tmp/WearMemoryText_1.2.6_InstallPatch_v2_TrollStore_iOS15.ipa
+OUT=/tmp/WearMemoryText_1.2.6_InstallPatch_v3_TrollStore_iOS15.ipa
 rm -f "$OUT" "$OUT.sha256"
 cd "$WORK"
 zip -qry "$OUT" Payload
@@ -97,5 +105,5 @@ shasum -a 256 "$OUT" > "$OUT.sha256"
 ! unzip -l "$OUT" | grep -q '/patchhelper$'
 SIZE=$(stat -f%z "$OUT")
 test "$SIZE" -lt 10000000
-printf 'Patch IPA v2 size: %s bytes\n' "$SIZE"
+printf 'Patch IPA v3 size: %s bytes\n' "$SIZE"
 cat "$OUT.sha256"
