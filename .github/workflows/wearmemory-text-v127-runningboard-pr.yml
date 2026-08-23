@@ -1,0 +1,35 @@
+name: WearMemory Text 1.2.7 RunningBoard Background
+
+on:
+  pull_request:
+    branches: [ wearmemory-text-v126-no-file-deadline ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build WearMemory Text 1.2.7
+        shell: bash
+        run: bash wearmemory_text_v121/build_production_v127.sh
+
+      - name: Upload verified 1.2.7 IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: WearMemoryText-v1.2.7-Base-SmallQ5_1-RunningBoard-9MinuteWatchdog-DEElektro-iOS15
+          path: |
+            /tmp/WearMemoryText_v1.2.7b27_Base_SmallQ5_1_RunningBoard_9MinuteWatchdog_DEElektro_iOS15.ipa
+            /tmp/WearMemoryText_v1.2.7b27_Base_SmallQ5_1_RunningBoard_9MinuteWatchdog_DEElektro_iOS15.ipa.sha256
+            /tmp/WearMemoryText_v1.2.7_Source.zip
+            /tmp/wmtext121-entitlements.plist
+            /tmp/wm127-entitlements.plist
+            /tmp/wmtext121-build.log
+          compression-level: 0
+          retention-days: 7
