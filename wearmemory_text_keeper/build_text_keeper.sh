@@ -112,7 +112,7 @@ EXE_NAME=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$WORK/Info.pl
 unzip -p "$OUT" "${APP_PATH}${EXE_NAME}" > "$WORK/TextKeeper"
 chmod +x "$WORK/TextKeeper"
 file "$WORK/TextKeeper" | grep -q 'arm64'
-codesign -d --entitlements :- "$WORK/TextKeeper" > "$WORK/entitlements.plist" 2>/dev/null
+ldid -e "$WORK/TextKeeper" > "$WORK/entitlements.plist"
 plutil -lint "$WORK/entitlements.plist"
 /usr/libexec/PlistBuddy -c 'Print :com.apple.frontboard.launchapplications' "$WORK/entitlements.plist" | grep -Fx 'true'
 /usr/libexec/PlistBuddy -c 'Print :com.apple.runningboard.launchprocess' "$WORK/entitlements.plist" | grep -Fx 'true'
