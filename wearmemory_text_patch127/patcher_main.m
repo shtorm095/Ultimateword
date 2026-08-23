@@ -50,7 +50,7 @@ static int SpawnRoot(NSString *path, NSArray<NSString *> *arguments) {
 
     UILabel *title = [UILabel new];
     title.translatesAutoresizingMaskIntoConstraints = NO;
-    title.text = @"WearMemory Text 1.2.7 Patch v5";
+    title.text = @"WearMemory Text 1.2.7 Patch v6";
     title.font = [UIFont boldSystemFontOfSize:24];
     title.numberOfLines = 0;
     title.textAlignment = NSTextAlignmentCenter;
@@ -103,7 +103,12 @@ static int SpawnRoot(NSString *path, NSArray<NSString *> *arguments) {
         case 26: return @"Не удалось создать резервную копию. Патч не применён.";
         case 27: return @"Не удалось записать новый код. Выполнен откат.";
         case 28: return @"TrollStore не смог повторно подписать Text. Выполнен откат.";
-        case 29: return @"Проверка после установки не прошла. Выполнен откат.";
+        case 30: return @"После подписи Text не найден. Выполнен откат.";
+        case 31: return @"После подписи не совпала версия Text. Выполнен откат.";
+        case 32: return @"После подписи остался старый audio background mode. Выполнен откат.";
+        case 33: return @"После подписи не прошла проверка моделей. Выполнен откат.";
+        case 34: return @"После подписи не прошла проверка executable. Выполнен откат.";
+        case 35: return @"После подписи не восстановился TrollStore marker. Выполнен откат.";
         case 1209: return @"Root helper остановлен iOS через SIGKILL. Патч не применён.";
         default: return [NSString stringWithFormat:@"Ошибка установки: %d", code];
     }
