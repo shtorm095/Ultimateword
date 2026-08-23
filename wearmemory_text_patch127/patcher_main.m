@@ -50,14 +50,14 @@ static int SpawnRoot(NSString *path, NSArray<NSString *> *arguments) {
 
     UILabel *title = [UILabel new];
     title.translatesAutoresizingMaskIntoConstraints = NO;
-    title.text = @"WearMemory Text 1.2.7 Patch v6";
+    title.text = @"WearMemory Text 1.2.8 Patch v7";
     title.font = [UIFont boldSystemFontOfSize:24];
     title.numberOfLines = 0;
     title.textAlignment = NSTextAlignmentCenter;
 
     UILabel *info = [UILabel new];
     info.translatesAutoresizingMaskIntoConstraints = NO;
-    info.text = @"Обновляет код Text и фоновый механизм RunningBoard. Base и Small Q5_1 остаются на устройстве. Перед установкой закрой Text.";
+    info.text = @"Исправляет отказ RunningBoard assertion и добавляет точную RBS-диагностику. Base и Small Q5_1 остаются на устройстве. Перед установкой закрой Text.";
     info.font = [UIFont systemFontOfSize:16];
     info.numberOfLines = 0;
     info.textAlignment = NSTextAlignmentCenter;
@@ -92,7 +92,7 @@ static int SpawnRoot(NSString *path, NSArray<NSString *> *arguments) {
 
 - (NSString *)messageForCode:(int)code {
     switch (code) {
-        case 0: return @"Готово. Text обновлён до 1.2.7 build 27. Модели сохранены.";
+        case 0: return @"Готово. Text обновлён до 1.2.8 build 28. Модели сохранены.";
         case 19: return @"Root helper не получил root-права. Патч не применён.";
         case 20: return @"Text не найден на устройстве.";
         case 21: return @"Text найден, но он не отмечен как приложение TrollStore.";
