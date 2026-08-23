@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - wearmemory-text-part-installer
+  pull_request:
+    branches:
+      - wearmemory-text-part-installer
   workflow_dispatch:
 
 jobs:
