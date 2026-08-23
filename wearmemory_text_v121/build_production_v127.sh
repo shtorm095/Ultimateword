@@ -63,8 +63,9 @@ grep -Fq '"Фон"' "$SRC/ContentView.swift"
 test -d "$APP"
 test -f "$IPA"
 file "$APP/WearMemoryText" | grep -q 'arm64'
-strings "$APP/WearMemoryText" | grep -Fq 'RunningBoardServices.framework/RunningBoardServices'
-strings "$APP/WearMemoryText" | grep -Fq 'RBSLegacyAttribute'
+strings "$APP/WearMemoryText" > /tmp/wm127-strings.txt
+grep -Fq 'RunningBoardServices.framework/RunningBoardServices' /tmp/wm127-strings.txt
+grep -Fq 'RBSLegacyAttribute' /tmp/wm127-strings.txt
 
 codesign -d --entitlements :- "$APP" > /tmp/wm127-entitlements.plist 2>/dev/null
 plutil -lint /tmp/wm127-entitlements.plist
