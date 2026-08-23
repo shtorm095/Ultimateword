@@ -1,13 +1,8 @@
 name: WearMemory Text Keeper FrontBoard
 
 on:
-  push:
-    branches: [ wearmemory-text-v127-runningboard-background ]
-    paths:
-      - 'wearmemory_text_keeper/**'
-      - '.github/workflows/wearmemory-text-keeper-frontboard.yml'
   pull_request:
-    branches: [ wearmemory-text-v126-no-file-deadline ]
+    branches: [ wearmemory-text-keeper-base ]
   workflow_dispatch:
 
 permissions:
