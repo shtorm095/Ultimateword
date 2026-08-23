@@ -25,17 +25,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build small TrollStore patch IPA
+      - name: Build small TrollStore patch IPA v2
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash wearmemory_text_patch126/build_patch_ipa.sh
 
-      - name: Upload patch IPA
+      - name: Upload patch IPA v2
         uses: actions/upload-artifact@v4
         with:
-          name: WearMemoryText-1.2.6-TrollStore-InstallPatch-iOS15
+          name: WearMemoryText-1.2.6-TrollStore-InstallPatch-v2-iOS15
           path: |
-            /tmp/WearMemoryText_1.2.6_InstallPatch_TrollStore_iOS15.ipa
-            /tmp/WearMemoryText_1.2.6_InstallPatch_TrollStore_iOS15.ipa.sha256
+            /tmp/WearMemoryText_1.2.6_InstallPatch_v2_TrollStore_iOS15.ipa
+            /tmp/WearMemoryText_1.2.6_InstallPatch_v2_TrollStore_iOS15.ipa.sha256
           compression-level: 0
           retention-days: 7
