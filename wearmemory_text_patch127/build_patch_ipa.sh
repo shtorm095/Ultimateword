@@ -17,7 +17,6 @@ unzip -p "$FULL_IPA" 'Payload/WearMemoryText.app/WearMemoryText' > "$WORK/target
 test "$(stat -f%z "$WORK/target-executable")" = "2671760"
 echo '68fd375feda10389c46cb62388f75c7f200f68522fe63fb3555b8d6c65fa5d61  '"$WORK/target-executable" | shasum -a 256 -c -
 
-# Verify the exact signed entitlements on the executable that will be patched in.
 codesign -d --entitlements :- "$WORK/target-executable" > "$WORK/target-entitlements.plist" 2>/dev/null
 plutil -lint "$WORK/target-entitlements.plist"
 /usr/libexec/PlistBuddy -c 'Print :com.apple.runningboard.primitiveattribute' "$WORK/target-entitlements.plist" | grep -Fx 'true'
@@ -27,6 +26,12 @@ plutil -lint "$WORK/target-entitlements.plist"
 strings "$WORK/target-executable" > "$WORK/target-strings.txt"
 grep -Fq 'RunningBoardServices.framework/RunningBoardServices' "$WORK/target-strings.txt"
 grep -Fq 'RBSLegacyAttribute' "$WORK/target-strings.txt"
+
+# v6 regression guard: TrollStore re-signing is allowed to change Mach-O file size.
+grep -Fq 'patchedExecSize > 2500000ULL' "$ROOT/wearmemory_text_patch127/patchhelper.m"
+grep -Fq 'patchedExecSize < 3000000ULL' "$ROOT/wearmemory_text_patch127/patchhelper.m"
+! grep -Fq 'FileSize([patched stringByAppendingPathComponent:@"WearMemoryText"]) == PayloadExecutableSize' "$ROOT/wearmemory_text_patch127/patchhelper.m"
+grep -Fq 'Patch v6' "$ROOT/wearmemory_text_patch127/patcher_main.m"
 
 python3 - "$WORK/target-executable" "$WORK/target-executable.xor" <<'PY'
 from pathlib import Path
@@ -60,10 +65,10 @@ cat > "$APP/Info.plist" <<'PLIST'
 <key>CFBundleExecutable</key><string>WearMemoryTextPatch127</string>
 <key>CFBundleIdentifier</key><string>local.pavel.WearMemoryTextPatch127</string>
 <key>CFBundleName</key><string>Text Patch</string>
-<key>CFBundleDisplayName</key><string>Text 1.2.7 Patch v5</string>
+<key>CFBundleDisplayName</key><string>Text 1.2.7 Patch v6</string>
 <key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>1.0</string>
-<key>CFBundleVersion</key><string>5</string>
+<key>CFBundleShortVersionString</key><string>1.1</string>
+<key>CFBundleVersion</key><string>6</string>
 <key>MinimumOSVersion</key><string>15.0</string>
 <key>LSRequiresIPhoneOS</key><true/>
 <key>UIDeviceFamily</key><array><integer>1</integer><integer>2</integer></array>
@@ -117,10 +122,10 @@ plutil -lint "$WORK/helper-entitlements.plist"
 /usr/libexec/PlistBuddy -c 'Print :com.apple.private.security.storage.AppBundles' "$WORK/helper-entitlements.plist" | grep -Fx 'true'
 /usr/libexec/PlistBuddy -c 'Print :TSRootBinaries:0' "$APP/Info.plist" | grep -Fx 'patchhelper'
 /usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$APP/Info.plist" | grep -Fx '15.0'
+/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$APP/Info.plist" | grep -Fx 'Text 1.2.7 Patch v6'
 file "$APP/WearMemoryTextPatch127" | grep -q 'arm64'
 file "$APP/patchhelper" | grep -q 'arm64'
 
-# Decode embedded payload once more from the final app and compare exactly.
 python3 - "$APP/target-executable.xor" "$WORK/decoded-check" <<'PY'
 from pathlib import Path
 import sys
@@ -131,7 +136,7 @@ Path(sys.argv[2]).write_bytes(src)
 PY
 echo '68fd375feda10389c46cb62388f75c7f200f68522fe63fb3555b8d6c65fa5d61  '"$WORK/decoded-check" | shasum -a 256 -c -
 
-OUT=/tmp/WearMemoryText_1.2.7_InstallPatch_v5_RunningBoard_TrollStore_iOS15.ipa
+OUT=/tmp/WearMemoryText_1.2.7_InstallPatch_v6_RunningBoard_TrollStore_iOS15.ipa
 rm -f "$OUT" "$OUT.sha256"
 cd "$WORK"
 zip -qry "$OUT" Payload
@@ -144,5 +149,5 @@ unzip -l "$OUT" > "$WORK/ipa-list.txt"
 grep -Fq 'Payload/WearMemoryTextPatch127.app/patchhelper' "$WORK/ipa-list.txt"
 SIZE=$(stat -f%z "$OUT")
 test "$SIZE" -lt 10000000
-printf 'Patch IPA v5 size: %s bytes\n' "$SIZE"
+printf 'Patch IPA v6 size: %s bytes\n' "$SIZE"
 cat "$OUT.sha256"
