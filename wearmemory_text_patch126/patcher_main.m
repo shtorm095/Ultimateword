@@ -3,15 +3,14 @@
 #import <spawn.h>
 #import <sys/wait.h>
 #import <unistd.h>
-#import <string.h>
 
+extern char **environ;
 #ifndef POSIX_SPAWN_PERSONA_FLAGS_OVERRIDE
 #define POSIX_SPAWN_PERSONA_FLAGS_OVERRIDE 1
 #endif
 extern int posix_spawnattr_set_persona_np(posix_spawnattr_t *attr, uid_t persona_id, uint32_t flags);
 extern int posix_spawnattr_set_persona_uid_np(posix_spawnattr_t *attr, uid_t uid);
 extern int posix_spawnattr_set_persona_gid_np(posix_spawnattr_t *attr, gid_t gid);
-extern int WearMemoryPatchHelperMain(int argc, char *argv[]);
 
 static int SpawnRoot(NSString *path, NSArray<NSString *> *arguments) {
     NSMutableArray<NSString *> *all = [NSMutableArray arrayWithObject:path];
@@ -27,7 +26,7 @@ static int SpawnRoot(NSString *path, NSArray<NSString *> *arguments) {
     posix_spawnattr_set_persona_gid_np(&attr, 0);
 
     pid_t pid = 0;
-    int spawnResult = posix_spawn(&pid, path.fileSystemRepresentation, NULL, &attr, argv, NULL);
+    int spawnResult = posix_spawn(&pid, path.fileSystemRepresentation, NULL, &attr, argv, environ);
     posix_spawnattr_destroy(&attr);
     for (NSUInteger i = 0; i < all.count; i++) free(argv[i]);
     free(argv);
@@ -52,7 +51,7 @@ static int SpawnRoot(NSString *path, NSArray<NSString *> *arguments) {
 
     UILabel *title = [UILabel new];
     title.translatesAutoresizingMaskIntoConstraints = NO;
-    title.text = @"WearMemory Text 1.2.6 Patch";
+    title.text = @"WearMemory Text 1.2.6 Patch v4";
     title.font = [UIFont boldSystemFontOfSize:24];
     title.numberOfLines = 0;
     title.textAlignment = NSTextAlignmentCenter;
@@ -95,6 +94,7 @@ static int SpawnRoot(NSString *path, NSArray<NSString *> *arguments) {
 - (NSString *)messageForCode:(int)code {
     switch (code) {
         case 0: return @"Готово. Text обновлён до 1.2.6 build 26. Модели не переустанавливались.";
+        case 19: return @"Root helper не получил root-права. Патч не применён.";
         case 20: return @"Text не найден на устройстве.";
         case 21: return @"Text найден, но он не отмечен как приложение TrollStore.";
         case 22: return @"Модели Base/Small отсутствуют или имеют неожиданный размер. Патч не применён.";
@@ -105,7 +105,7 @@ static int SpawnRoot(NSString *path, NSArray<NSString *> *arguments) {
         case 27: return @"Не удалось записать новый код. Выполнен откат.";
         case 28: return @"TrollStore не смог повторно подписать Text. Выполнен откат.";
         case 29: return @"Проверка после установки не прошла. Выполнен откат.";
-        case 1209: return @"Корневой процесс был остановлен iOS (SIGKILL). Эта сборка патчера несовместима с данным способом запуска.";
+        case 1209: return @"Root helper остановлен iOS через SIGKILL. Патч не применён.";
         default: return [NSString stringWithFormat:@"Ошибка установки: %d", code];
     }
 }
@@ -113,10 +113,10 @@ static int SpawnRoot(NSString *path, NSArray<NSString *> *arguments) {
 - (void)installPatch {
     self.installButton.enabled = NO;
     self.statusLabel.text = @"Устанавливаю…";
-    NSString *helper = NSBundle.mainBundle.executablePath;
+    NSString *helper = [[NSBundle mainBundle] pathForResource:@"patchhelper" ofType:nil];
     NSString *bundlePath = NSBundle.mainBundle.bundlePath;
     if (!helper) {
-        self.statusLabel.text = @"Исполняемый файл патчера не найден";
+        self.statusLabel.text = @"patchhelper отсутствует";
         self.installButton.enabled = YES;
         return;
     }
@@ -145,9 +145,6 @@ static int SpawnRoot(NSString *path, NSArray<NSString *> *arguments) {
 
 int main(int argc, char * argv[]) {
     @autoreleasepool {
-        if (argc >= 2 && strcmp(argv[1], "apply") == 0) {
-            return WearMemoryPatchHelperMain(argc, argv);
-        }
         return UIApplicationMain(argc, argv, nil, NSStringFromClass(AppDelegate.class));
     }
 }
