@@ -103,6 +103,11 @@ static int Run(NSString *path, NSArray<NSString *> *args) {
     return WEXITSTATUS(status);
 }
 
+static int RollbackAndReturn(NSString *appPath, NSString *activeMarker, NSString *inactiveMarker, int code) {
+    if (appPath) RestoreBackup(appPath, activeMarker, inactiveMarker);
+    return code;
+}
+
 int main(int argc, char *argv[]) {
     @autoreleasepool {
         if (getuid() != 0) return 19;
@@ -174,17 +179,29 @@ int main(int argc, char *argv[]) {
         }
 
         NSString *patched = FindApp(TargetBundleID);
-        if (!patched) return 29;
+        if (!patched) return RollbackAndReturn(target, activeMarker, inactiveMarker, 30);
         NSDictionary *patchedInfo = [NSDictionary dictionaryWithContentsOfFile:[patched stringByAppendingPathComponent:@"Info.plist"]];
         BOOL versionOK = [patchedInfo[@"CFBundleShortVersionString"] isEqualToString:@"1.2.7"] && [patchedInfo[@"CFBundleVersion"] isEqualToString:@"27"];
+        if (!versionOK) return RollbackAndReturn(patched, activeMarker, inactiveMarker, 31);
+
         BOOL noAudioMode = ![patchedInfo[@"UIBackgroundModes"] containsObject:@"audio"];
+        if (!noAudioMode) return RollbackAndReturn(patched, activeMarker, inactiveMarker, 32);
+
         BOOL modelsOK = FileSize([patched stringByAppendingPathComponent:@"ggml-base.bin"]) == BaseModelSize && FileSize([patched stringByAppendingPathComponent:@"ggml-small-q5_1.bin"]) == SmallModelSize;
-        BOOL execOK = FileSize([patched stringByAppendingPathComponent:@"WearMemoryText"]) == PayloadExecutableSize;
+        if (!modelsOK) return RollbackAndReturn(patched, activeMarker, inactiveMarker, 33);
+
+        // TrollStore's transfer-apps re-signs the main Mach-O. The code-signature
+        // region is allowed to change size, so the post-sign executable must NOT
+        // be compared byte-for-byte or by exact file length with the payload.
+        // Check that a plausible, executable Mach-O remains instead.
+        NSString *patchedExec = [patched stringByAppendingPathComponent:@"WearMemoryText"];
+        unsigned long long patchedExecSize = FileSize(patchedExec);
+        BOOL execOK = [fm isExecutableFileAtPath:patchedExec] && patchedExecSize > 2500000ULL && patchedExecSize < 3000000ULL;
+        if (!execOK) return RollbackAndReturn(patched, activeMarker, inactiveMarker, 34);
+
         BOOL markerOK = [fm fileExistsAtPath:[patched.stringByDeletingLastPathComponent stringByAppendingPathComponent:activeMarker]];
-        if (!versionOK || !noAudioMode || !modelsOK || !execOK || !markerOK) {
-            RestoreBackup(patched, activeMarker, inactiveMarker);
-            return 29;
-        }
+        if (!markerOK) return RollbackAndReturn(patched, activeMarker, inactiveMarker, 35);
+
         return 0;
     }
 }
