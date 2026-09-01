@@ -1,0 +1,125 @@
+name: Build WearMemory IPA
+
+on:
+  push:
+    branches: [ wearmemory-install ]
+    paths:
+      - '.wearmemory_build/**'
+      - '.github/workflows/wearmemory-build.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '.wearmemory_build/**'
+      - '.github/workflows/wearmemory-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reconstruct WearMemory source
+        run: |
+          set -euo pipefail
+          cat .wearmemory_build/source.b64.* | python3 -c 'import sys,base64; sys.stdout.buffer.write(base64.b64decode(sys.stdin.buffer.read()))' > WearMemory_source_v0.8.zip
+          unzip -q WearMemory_source_v0.8.zip
+          test -f WearMemory/WearMemory/Info.plist
+
+      - name: Fix XcodeGen configuration
+        run: |
+          cat > WearMemory/project.yml <<'YAML'
+          name: WearMemory
+          options:
+            bundleIdPrefix: local.pavel
+            deploymentTarget:
+              iOS: '15.0'
+          settings:
+            base:
+              SWIFT_VERSION: '5.0'
+          targets:
+            WearMemory:
+              type: application
+              platform: iOS
+              sources:
+                - path: WearMemory
+              settings:
+                base:
+                  PRODUCT_BUNDLE_IDENTIFIER: local.pavel.WearMemory
+                  PRODUCT_NAME: WearMemory
+                  GENERATE_INFOPLIST_FILE: NO
+                  INFOPLIST_FILE: WearMemory/Info.plist
+                  CODE_SIGN_STYLE: Automatic
+                  IPHONEOS_DEPLOYMENT_TARGET: '15.0'
+                  TARGETED_DEVICE_FAMILY: '1'
+                  MARKETING_VERSION: '0.8'
+                  CURRENT_PROJECT_VERSION: '8'
+              scheme:
+                testTargets: []
+          YAML
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: WearMemory
+        run: xcodegen generate
+
+      - name: Build for iPod/iPhone device without developer signing
+        working-directory: WearMemory
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project WearMemory.xcodeproj \
+            -scheme WearMemory \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build
+
+      - name: Verify built app
+        working-directory: WearMemory
+        run: |
+          set -euo pipefail
+          APP='build/DerivedData/Build/Products/Release-iphoneos/WearMemory.app'
+          PLIST="$APP/Info.plist"
+          test -d "$APP"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$PLIST")" = '15.0'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$PLIST")" = 'local.pavel.WearMemory'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$PLIST")" = '0.8'
+          /usr/libexec/PlistBuddy -c 'Print :NSMicrophoneUsageDescription' "$PLIST" >/dev/null
+          /usr/libexec/PlistBuddy -c 'Print :NSCameraUsageDescription' "$PLIST" >/dev/null
+          /usr/libexec/PlistBuddy -c 'Print :NSSpeechRecognitionUsageDescription' "$PLIST" >/dev/null
+          /usr/libexec/PlistBuddy -c 'Print :UIBackgroundModes:0' "$PLIST" | grep -qx 'audio'
+          /usr/bin/lipo -info "$APP/WearMemory" | grep -q 'arm64'
+
+      - name: Package IPA for TrollStore
+        working-directory: WearMemory
+        run: |
+          set -euo pipefail
+          APP='build/DerivedData/Build/Products/Release-iphoneos/WearMemory.app'
+          rm -rf Payload WearMemory.ipa
+          mkdir Payload
+          cp -R "$APP" Payload/WearMemory.app
+          /usr/bin/codesign --force --deep --sign - Payload/WearMemory.app
+          zip -qry WearMemory.ipa Payload
+          test -s WearMemory.ipa
+          shasum -a 256 WearMemory.ipa | tee WearMemory.ipa.sha256
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: WearMemory-IPA-v0.8
+          path: |
+            WearMemory/WearMemory.ipa
+            WearMemory/WearMemory.ipa.sha256
+          if-no-files-found: error
