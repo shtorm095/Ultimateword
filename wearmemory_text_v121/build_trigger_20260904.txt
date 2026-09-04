@@ -1,0 +1,7 @@
+Fresh production rebuild requested 2026-09-04.
+Expected integrated layers:
+- one original M4A -> one canonical TXT
+- German electrical-domain prompt and conservative correction
+- Whisper token confidence warnings
+- chunk-boundary duplicate suppression
+- conservative local two-speaker separation when confidence is sufficient
