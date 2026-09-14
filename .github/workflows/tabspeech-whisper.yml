@@ -1,0 +1,60 @@
+name: Build TabSpeech Whisper
+on:
+  push:
+    branches: [tabspeech-whisper-build]
+    paths:
+      - 'tabspeech/**'
+      - '.github/workflows/tabspeech-whisper.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '11'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK components
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager 'platforms;android-31' 'build-tools;30.0.3' 'ndk;25.2.9519653' 'cmake;3.22.1'
+      - name: Fetch pinned whisper.cpp
+        run: |
+          git init whisper
+          git -C whisper remote add origin https://github.com/ggml-org/whisper.cpp.git
+          git -C whisper fetch --depth 1 origin f133970bbb8c034ad9055a70afb97d61c24038f9
+          git -C whisper checkout FETCH_HEAD
+      - name: Patch Android example
+        run: python3 tabspeech/patch_native.py
+      - name: Add Whisper small multilingual model
+        run: |
+          mkdir -p whisper/examples/whisper.android.java/app/src/main/assets/models
+          curl -L --fail --retry 3 -o whisper/examples/whisper.android.java/app/src/main/assets/models/ggml-small.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin
+          echo '1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b  whisper/examples/whisper.android.java/app/src/main/assets/models/ggml-small.bin' | sha256sum -c -
+      - name: Build APK
+        working-directory: whisper/examples/whisper.android.java
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug --no-daemon --stacktrace
+      - name: Verify APK
+        run: |
+          APK=whisper/examples/whisper.android.java/app/build/outputs/apk/debug/app-debug.apk
+          test -f "$APK"
+          unzip -t "$APK" >/dev/null
+          unzip -l "$APK" | grep 'assets/models/ggml-small.bin'
+          if unzip -p "$APK" AndroidManifest.xml | strings | grep -q 'android.permission.INTERNET'; then echo 'Unexpected INTERNET permission'; exit 1; fi
+          cp "$APK" TabSpeech-WhisperSmall-SM-T820-v0.2.apk
+          sha256sum TabSpeech-WhisperSmall-SM-T820-v0.2.apk > TabSpeech-WhisperSmall-SM-T820-v0.2.sha256
+          ls -lh TabSpeech-WhisperSmall-SM-T820-v0.2.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tabspeech-whisper-small-v0.2
+          path: |
+            TabSpeech-WhisperSmall-SM-T820-v0.2.apk
+            TabSpeech-WhisperSmall-SM-T820-v0.2.sha256
+          compression-level: 0
+          retention-days: 30
